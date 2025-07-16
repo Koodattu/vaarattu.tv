@@ -58,4 +58,10 @@ Personal streamer website for [Twitch.tv/vaarattu] - Fullstack app for tracking 
 - Use Twitch OAuth for login (identity only, no unnecessary scopes)
 - Bot login/auth callback managed by backend
 
----
+## Interaction with Copilot (Agent Mode)
+
+- When performing large edits or refactors, present a clear outline or plan before making changes.
+- After making a plan, proceed with the implementation.
+- Use context7 to find up to date documentation, first #resolve-library-id and then #get-library-docs
+- Remember that we are using Windows, so use PowerShell commands for file operations
+- Remember to always navigate first to the correct directory before running commands
