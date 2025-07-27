@@ -9,6 +9,7 @@ applyTo: "**/frontend/**"
 - Next.js (App Router, TypeScript)
 - React (Function components, hooks)
 - Tailwind CSS
+- shadcn/ui (component library, works with Tailwind CSS)
 
 ## Structure
 
@@ -23,7 +24,7 @@ applyTo: "**/frontend/**"
 ## Practices
 
 - **TypeScript strict mode**: No `any`, explicit props, use interfaces/types
-- **Components**: Atomic, reusable, single-responsibility, no duplicated logic
+- **Components**: Atomic, reusable, single-responsibility, no duplicated logic; prefer shadcn/ui components for common UI patterns when possible
 - **Hooks**: Use for all stateful/data logic; custom hooks for API/data fetching
 - **API Calls**: Only via `/services` or dedicated API utility hooks; never inline
 - **State**: Use React state, context, or Tanstack Query/SWR for async/server state
@@ -42,6 +43,8 @@ applyTo: "**/frontend/**"
 - **Linting/Formatting**: Enforced with ESLint + Prettier in CI
 
 ## Page/Component Guidelines
+
+- **UI Library**: Use shadcn/ui components together with Tailwind CSS for building accessible, consistent, and modern UIs.
 
 - **Home page**: Embedded stream, status, quick links to leaderboards/clips
 - **Leaderboards**: Paginated, sortable, highlight current logged-in user
