@@ -1,19 +1,37 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
+import { tryCreateChatClient } from "./twitch/chat";
+import { registerChatHandlers } from "./twitch/chatHandlers";
+import { startEventSubWs } from "./twitch/eventsub";
+import { startTwitchAuthServer } from "./twitch/dualAuthServer";
+import { getTokenPaths } from "./twitch/authProviders";
+import fs from "fs";
 
-dotenv.config();
+async function start() {
+  const { streamer, bot } = getTokenPaths();
+  let missing = [];
+  if (!fs.existsSync(streamer)) missing.push("streamer");
+  if (!fs.existsSync(bot)) missing.push("bot");
 
-const app = express();
-const PORT = process.env.PORT || 4000;
+  if (missing.length > 0) {
+    for (const account of missing) {
+      startTwitchAuthServer(account as "streamer" | "bot");
+    }
+    console.log(`Waiting for OAuth for: ${missing.join(", ")}`);
+    return;
+  }
 
-app.use(cors());
-app.use(express.json());
+  try {
+    const chatClient = await tryCreateChatClient();
+    await chatClient.connect();
+    console.log("Twitch chat client connected and listening.");
+    registerChatHandlers(chatClient);
+    await startEventSubWs();
+  } catch (err) {
+    if (err instanceof Error) {
+      console.error("Failed to start Twitch services:", err.message);
+    } else {
+      console.error("Failed to start Twitch services:", err);
+    }
+  }
+}
 
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok" });
-});
-
-app.listen(PORT, () => {
-  console.log(`Backend server running on port ${PORT}`);
-});
+start();

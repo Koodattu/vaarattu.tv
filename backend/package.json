@@ -14,8 +14,14 @@
   "description": "",
   "dependencies": {
     "@prisma/client": "^6.12.0",
+    "@twurple/api": "^7.3.0",
+    "@twurple/api-call": "^7.3.0",
+    "@twurple/auth": "^7.3.0",
+    "@twurple/chat": "^7.3.0",
+    "@twurple/common": "^7.3.0",
+    "@twurple/eventsub-ws": "^7.3.0",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.0",
+    "dotenv": "^17.2.1",
     "express": "^5.1.0"
   },
   "devDependencies": {
