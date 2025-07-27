@@ -2,7 +2,6 @@ import { RefreshingAuthProvider, type AccessToken } from "@twurple/auth";
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
-
 dotenv.config();
 
 const clientId = process.env.TWITCH_CLIENT_ID!;
@@ -76,4 +75,16 @@ export async function getBotAuthProvider() {
 
 export function getTokenPaths() {
   return tokenPaths;
+}
+
+export function getUserId(type: "streamer" | "bot"): string {
+  const tokenFilePath = tokenPaths[type];
+  if (!fs.existsSync(tokenFilePath)) {
+    throw new Error(`Token file for ${type} not found at ${tokenFilePath}`);
+  }
+  const tokenData = JSON.parse(fs.readFileSync(tokenFilePath, "utf-8"));
+  if (!tokenData.id) {
+    throw new Error(`User id not found in ${type} token file`);
+  }
+  return tokenData.id;
 }

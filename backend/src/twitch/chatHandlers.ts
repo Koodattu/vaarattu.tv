@@ -1,9 +1,5 @@
 import { ChatClient, ChatMessage } from "@twurple/chat";
 
-/**
- * Register all chat event handlers for the bot.
- * Keep all chat-related logic here.
- */
 export function registerChatHandlers(chatClient: ChatClient) {
   chatClient.onMessage((channel, user, message, msg: ChatMessage) => {
     console.log(`[onMessage] [${channel}] <${user}>: ${message}`);

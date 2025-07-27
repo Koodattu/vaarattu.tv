@@ -1,11 +1,7 @@
 import express from "express";
 import { exchangeCode } from "@twurple/auth";
-import dotenv from "dotenv";
 import fs from "fs";
-import path from "path";
 import { getTokenPaths } from "./authProviders";
-
-dotenv.config();
 
 const clientId = process.env.TWITCH_CLIENT_ID!;
 const clientSecret = process.env.TWITCH_CLIENT_SECRET!;
@@ -29,6 +25,7 @@ const scopes = {
     "channel:read:predictions",
     "moderator:read:followers",
     "chat:read",
+    "user:read:chat",
   ],
   bot: ["chat:read", "chat:edit"],
 };

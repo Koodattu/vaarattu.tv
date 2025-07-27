@@ -4,6 +4,8 @@ import { startEventSubWs } from "./twitch/eventsub";
 import { startTwitchAuthServer } from "./twitch/dualAuthServer";
 import { getTokenPaths } from "./twitch/authProviders";
 import fs from "fs";
+import dotenv from "dotenv";
+dotenv.config();
 
 async function start() {
   const { streamer, bot } = getTokenPaths();
