@@ -72,9 +72,8 @@ For each main folder, define:
 backend/
   src/
     api/
-      v1/
-        user.routes.ts
-        stream.routes.ts
+      user.routes.ts
+      stream.routes.ts
     controllers/
       user.controller.ts
       stream.controller.ts
