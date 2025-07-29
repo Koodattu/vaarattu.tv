@@ -24,6 +24,7 @@ const scopes = {
     "channel:read:polls",
     "channel:read:predictions",
     "moderator:read:followers",
+    "moderator:read:chatters",
     "chat:read",
     "user:read:chat",
   ],

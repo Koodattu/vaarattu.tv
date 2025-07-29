@@ -3,6 +3,7 @@ import { registerChatHandlers } from "./twitch/chatHandlers";
 import { startEventSubWs } from "./twitch/eventsub";
 import { startTwitchAuthServer } from "./twitch/dualAuthServer";
 import { getTokenPaths } from "./twitch/authProviders";
+import { startChatPollingService } from "./twitch/chatPollingService";
 import fs from "fs";
 import dotenv from "dotenv";
 dotenv.config();
@@ -27,6 +28,7 @@ async function start() {
     console.log("Twitch chat client connected and listening.");
     registerChatHandlers(chatClient);
     await startEventSubWs();
+    startChatPollingService();
   } catch (err) {
     if (err instanceof Error) {
       console.error("Failed to start Twitch services:", err.message);
