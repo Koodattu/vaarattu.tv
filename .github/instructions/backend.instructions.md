@@ -9,7 +9,7 @@ applyTo: "**/backend/**"
 - Node.js (TypeScript)
 - Express.js (or Next.js API routes if co-located)
 - Prisma ORM (PostgreSQL)
-- Twitch API (IRC, EventSub, Helix REST)
+- **Twitch API (IRC, EventSub, Helix REST) via [Twurple](https://twurple.js.org/) libraries**
 - Dockerized deployment
 
 ## Folder & File Responsibilities
@@ -159,7 +159,7 @@ backend/
   - Efficient batch updates for chatters and user presence (never one user/query at a time)
   - Name history: update on username change, store history table
 - **Twitch integration**:
-  - Use official Twitch API clients
+  - Use official Twitch API clients, specifically the [Twurple](https://twurple.js.org/) libraries for all Twitch API, IRC, and EventSub interactions
   - IRC for messages/presence, EventSub for redemptions/events
   - Auth bot login via backend callback page
   - Poll chatters endpoint every 5 minutes for presence/session tracking
