@@ -42,6 +42,7 @@ export async function startEventSubWs() {
 
   listener.onChannelChatMessage(streamerChannel, streamerChannel, async (event) => {
     try {
+      console.log("[EventSub] Chat message event received: ", event.chatterName, event.messageText);
       await processChatMessageEvent(event);
     } catch (err) {
       console.error("[EventSub] Failed to process chat message event:", err);
