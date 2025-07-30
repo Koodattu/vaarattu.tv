@@ -57,10 +57,6 @@ model Stream {
   endTime   DateTime?
   status    String
   title     String
-  messages  Message[]
-  redemptions Redemption[]
-  viewSessions ViewSession[]
-  emoteUsages EmoteUsage[]
 }
 
 model ViewerProfile {
