@@ -1,6 +1,27 @@
-import { PrismaClient, Stream } from "@prisma/client";
+import prisma from "../prismaClient";
+import { Stream } from "@prisma/client";
 
-const prisma = new PrismaClient();
+export async function endLatestStreamForBroadcaster({ userId, endTime }: { userId: string; endTime: Date }) {
+  // Find the latest stream for this broadcaster with null endTime
+  const latest = await prisma.stream.findFirst({
+    where: {
+      games: {
+        some: {
+          streams: {
+            some: {}, // just to allow the join
+          },
+        },
+      },
+      endTime: null,
+    },
+    orderBy: { startTime: "desc" },
+  });
+  if (!latest) return null;
+  return prisma.stream.update({
+    where: { id: latest.id },
+    data: { endTime },
+  });
+}
 
 export async function createStreamWithGame({
   id,

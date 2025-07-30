@@ -1,7 +1,7 @@
 import { EventSubWsListener } from "@twurple/eventsub-ws";
 import { ApiClient } from "@twurple/api";
 import { getStreamerAuthProvider, getUserId } from "../auth/authProviders";
-import { processStreamOnlineEvent } from "../../services/stream.service";
+import { processStreamOnlineEvent, processStreamOfflineEvent } from "../../services/stream.service";
 
 export async function startEventSubWs() {
   const authProvider = await getStreamerAuthProvider();
@@ -17,6 +17,16 @@ export async function startEventSubWs() {
       console.error("[EventSub] Failed to process stream online event:", err);
     }
   });
+
+  // Update stream end time on stream offline
+  listener.onStreamOffline(streamerChannel, async (event) => {
+    try {
+      await processStreamOfflineEvent(event);
+    } catch (err) {
+      console.error("[EventSub] Failed to process stream offline event:", err);
+    }
+  });
+
   listener.onChannelRedemptionAdd(streamerChannel, (event) => {
     console.log("[EventSub] Channel Point Redemption:", event);
   });

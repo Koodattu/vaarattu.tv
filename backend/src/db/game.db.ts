@@ -1,6 +1,5 @@
-import { PrismaClient, Game } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "../prismaClient";
+import { Game } from "@prisma/client";
 
 export async function findOrCreateGame(game: { id: string; name: string; boxArtUrl?: string }): Promise<Game> {
   let dbGame = await prisma.game.findUnique({ where: { id: game.id } });
