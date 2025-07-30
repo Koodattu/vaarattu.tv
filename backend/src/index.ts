@@ -36,8 +36,8 @@ async function start() {
     // Sync channel point rewards from Twitch to DB
     const broadcasterId = getUserId("streamer");
     const newRewards = await syncChannelPointRewards(broadcasterId);
-    if (newRewards > 0) {
-      console.log(`Added ${newRewards} new channel point rewards to DB.`);
+    if (newRewards.added > 0 || newRewards.updated > 0) {
+      console.log(`Added ${newRewards.added} and updated ${newRewards.updated} channel point rewards to DB.`);
     } else {
       console.log("Channel point rewards are up to date.");
     }

@@ -2,12 +2,23 @@ import { EventSubWsListener } from "@twurple/eventsub-ws";
 import { ApiClient } from "@twurple/api";
 import { getStreamerAuthProvider, getUserId } from "../auth/authProviders";
 
+import { syncChannelPointRewards } from "../../services/channelReward.service";
+
 export async function startEventSubWs() {
   const authProvider = await getStreamerAuthProvider();
   const streamerChannel = getUserId("streamer");
   const apiClient = new ApiClient({ authProvider });
   const listener = new EventSubWsListener({ apiClient });
 
+  // Sync channel point rewards on stream start
+  listener.onStreamOnline(streamerChannel, async (event) => {
+    try {
+      const result = await syncChannelPointRewards(streamerChannel);
+      console.log(`[EventSub] Synced channel point rewards on stream start:`, result);
+    } catch (err) {
+      console.error("[EventSub] Failed to sync channel point rewards on stream start:", err);
+    }
+  });
   listener.onChannelRedemptionAdd(streamerChannel, (event) => {
     console.log("[EventSub] Channel Point Redemption:", event);
   });
