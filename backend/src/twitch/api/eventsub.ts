@@ -36,6 +36,10 @@ export async function startEventSubWs() {
     }
   });
 
+  listener.onChannelChatMessage(streamerChannel, streamerChannel, (event) => {
+    console.log("[EventSub] Chat Message:", event);
+  });
+
   listener.onChannelRedemptionAdd(streamerChannel, (event) => {
     console.log("[EventSub] Channel Point Redemption:", event);
   });
@@ -50,10 +54,6 @@ export async function startEventSubWs() {
   });
   listener.onChannelRaidTo(streamerChannel, (event) => {
     console.log("[EventSub] Raid:", event);
-  });
-
-  listener.onChannelChatMessage(streamerChannel, streamerChannel, (event) => {
-    console.log("[EventSub] Chat Message:", event);
   });
 
   await listener.start();
