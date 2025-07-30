@@ -55,7 +55,6 @@ model Stream {
   id        Int      @id @default(autoincrement())
   startTime DateTime
   endTime   DateTime?
-  status    String
   title     String
 }
 
