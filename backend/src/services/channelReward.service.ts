@@ -1,5 +1,5 @@
-import { getChannelPointRewards } from "../twitch/api/twitchApi";
 import prisma from "../prismaClient";
+import { getChannelPointRewards } from "../twitch/api/twitchApi";
 import type { ChannelReward } from "@prisma/client";
 
 export async function syncChannelPointRewards(broadcasterId: string) {
