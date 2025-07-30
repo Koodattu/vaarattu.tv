@@ -1,5 +1,6 @@
 import { getChannelChatters } from "./twitchApi";
 import { getUserId } from "../auth/authProviders";
+import { processViewerSessions } from "../../services/viewSession.service";
 
 async function pollChatters() {
   const BROADCASTER_ID = getUserId("streamer");
@@ -12,6 +13,7 @@ async function pollChatters() {
     const usernames = chatters.map((c) => c.userName).join(", ");
     console.log(`[Chatters @ ${new Date().toISOString()}] Count: ${chatters.length}`);
     console.log(`Usernames: ${usernames}`);
+    await processViewerSessions(chatters);
   } catch (err) {
     console.error("Failed to fetch chatters:", err);
   }
