@@ -8,7 +8,7 @@ import { startChatPollingService } from "./twitch/api/chatPollingService";
 import fs from "fs";
 import dotenv from "dotenv";
 import prisma from "./prismaClient";
-dotenv.config();
+dotenv.config({ quiet: true });
 
 async function start() {
   // Check DB connection before anything else
@@ -43,9 +43,9 @@ async function start() {
     }
 
     const chatClient = await tryCreateChatClient();
-    await chatClient.connect();
+    chatClient.connect();
     console.log("Twitch chat client connected and listening.");
-    registerChatHandlers(chatClient);
+    //registerChatHandlers(chatClient);
     await startEventSubWs();
     startChatPollingService();
   } catch (err) {
