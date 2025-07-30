@@ -2,6 +2,7 @@ import { EventSubWsListener } from "@twurple/eventsub-ws";
 import { ApiClient } from "@twurple/api";
 import { getStreamerAuthProvider, getUserId } from "../auth/authProviders";
 import { processStreamOnlineEvent, processStreamOfflineEvent, processChannelUpdateEvent } from "../../services/stream.service";
+import { processChatMessageEvent } from "../../services/chatMessage.service";
 
 export async function startEventSubWs() {
   const authProvider = await getStreamerAuthProvider();
@@ -12,6 +13,7 @@ export async function startEventSubWs() {
   // Sync channel point rewards and track stream/game on stream start
   listener.onStreamOnline(streamerChannel, async (event) => {
     try {
+      console.log("[EventSub] Stream online event received!");
       await processStreamOnlineEvent(event, streamerChannel);
     } catch (err) {
       console.error("[EventSub] Failed to process stream online event:", err);
@@ -21,6 +23,7 @@ export async function startEventSubWs() {
   // Track game/category/title changes
   listener.onChannelUpdate(streamerChannel, async (event) => {
     try {
+      console.log("[EventSub] Channel update event received!");
       await processChannelUpdateEvent(event);
     } catch (err) {
       console.error("[EventSub] Failed to process channel update event:", err);
@@ -30,14 +33,19 @@ export async function startEventSubWs() {
   // Update stream end time on stream offline
   listener.onStreamOffline(streamerChannel, async (event) => {
     try {
+      console.log("[EventSub] Stream offline event received!");
       await processStreamOfflineEvent(event);
     } catch (err) {
       console.error("[EventSub] Failed to process stream offline event:", err);
     }
   });
 
-  listener.onChannelChatMessage(streamerChannel, streamerChannel, (event) => {
-    console.log("[EventSub] Chat Message:", event);
+  listener.onChannelChatMessage(streamerChannel, streamerChannel, async (event) => {
+    try {
+      await processChatMessageEvent(event);
+    } catch (err) {
+      console.error("[EventSub] Failed to process chat message event:", err);
+    }
   });
 
   listener.onChannelRedemptionAdd(streamerChannel, (event) => {

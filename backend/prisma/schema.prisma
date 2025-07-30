@@ -11,23 +11,24 @@ model User {
   id           Int           @id @default(autoincrement())
   twitchId     String        @unique
   login        String        @unique
-  name         String
+  displayName  String
   avatar       String?
-  lastSeen     DateTime?
+  updated      DateTime      @default(now())
   messages     Message[]
   redemptions  Redemption[]
   viewSessions ViewSession[]
   nameHistory  NameHistory[]
-  viewerProfile ViewerProfile?
   emoteUsages  EmoteUsage[]
+  viewerProfile ViewerProfile?
 }
 
 model Message {
   id        Int      @id @default(autoincrement())
+  messageId String   @unique
   user      User     @relation(fields: [userId], references: [id])
   userId    Int
   content   String
-  timestamp DateTime
+  timestamp DateTime @default(now())
 }
 
 model ChannelReward {
@@ -59,21 +60,12 @@ model Stream {
   thumbnailUrl String?
   games     Game[]   @relation("StreamGames")
 }
+
 model Game {
   id        String   @id
   name      String
   boxArtUrl String?
   streams   Stream[] @relation("StreamGames")
-}
-
-model ViewerProfile {
-  user      User     @relation(fields: [userId], references: [id])
-  userId    Int      @id
-  aiSummary String?
-  lastUpdate DateTime?
-  stats     Json?
-  consent   Boolean  @default(false)
-  achievements Json?
 }
 
 model EmoteUsage {
@@ -94,12 +86,23 @@ model ViewSession {
   sessionEnd   DateTime?
 }
 
+model ViewerProfile {
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int      @id
+  aiSummary String?
+  lastUpdate DateTime?
+  stats     Json?
+  consent   Boolean  @default(false)
+  achievements Json?
+  lastSeen     DateTime?
+}
+
 model NameHistory {
   id           Int      @id @default(autoincrement())
   user         User     @relation(fields: [userId], references: [id])
   userId       Int
   previousName String
-  changedAt    DateTime
+  detectedAt   DateTime
 }
 
 model SetupItem {

@@ -9,11 +9,13 @@ export async function processStreamOnlineEvent(event: EventSubStreamOnlineEvent,
   console.log(`[EventSub] Synced channel point rewards on stream start:`, result);
 
   const stream = await event.getStream();
+  console.log("Called event.getStream()");
   if (!stream) {
     console.warn(`[EventSub] No stream info found for streamer on stream start.`);
     return;
   }
   const game = await stream.getGame();
+  console.log("Called stream.getGame()");
   // Ensure game exists
   const dbGame = await findOrCreateGame({
     id: stream.gameId,
@@ -27,6 +29,7 @@ export async function processStreamOnlineEvent(event: EventSubStreamOnlineEvent,
 }
 
 async function createStreamWithGame(id: string, title: string, startTime: Date, thumbnailUrl?: string, gameId?: string) {
+  console.log("Creating stream with game:", { id, title, startTime, thumbnailUrl, gameId });
   return prisma.stream.create({
     data: {
       id,
@@ -41,6 +44,7 @@ async function createStreamWithGame(id: string, title: string, startTime: Date, 
 async function findOrCreateGame(game: { id: string; name: string; boxArtUrl?: string }) {
   let dbGame = await prisma.game.findUnique({ where: { id: game.id } });
   if (!dbGame) {
+    console.log("Game not found, creating new entry:", game);
     dbGame = await prisma.game.create({
       data: {
         id: game.id,
