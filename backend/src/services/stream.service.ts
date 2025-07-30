@@ -1,32 +1,31 @@
+import { syncChannelPointRewards } from "./channelReward.service";
+import type { EventSubStreamOnlineEvent } from "@twurple/eventsub-base";
 import { findOrCreateGame } from "../db/game.db";
 import { createStreamWithGame } from "../db/stream.db";
 
-/**
- * Handles stream start: ensures game exists, creates stream entry, associates game.
- * @param streamInfo Twitch stream info object (id, title, started_at, thumbnail_url, game_id, game_name, box_art_url)
- */
-export async function handleStreamOnline(streamInfo: {
-  title: string;
-  started_at: string;
-  thumbnail_url?: string;
-  game_id: string;
-  game_name: string;
-  box_art_url?: string;
-}) {
+export async function processStreamOnlineEvent(event: EventSubStreamOnlineEvent, streamerChannel: string) {
+  const result = await syncChannelPointRewards(streamerChannel);
+  console.log(`[EventSub] Synced channel point rewards on stream start:`, result);
+
+  const stream = await event.getStream();
+  if (!stream) {
+    console.warn(`[EventSub] No stream info found for streamer on stream start.`);
+    return;
+  }
+  const game = await stream.getGame();
   // Ensure game exists
-  const game = await findOrCreateGame({
-    id: streamInfo.game_id,
-    name: streamInfo.game_name,
-    boxArtUrl: streamInfo.box_art_url,
+  const dbGame = await findOrCreateGame({
+    id: stream.gameId,
+    name: stream.gameName,
+    boxArtUrl: game?.boxArtUrl,
   });
-
   // Create stream entry and associate game
-  const stream = await createStreamWithGame({
-    title: streamInfo.title,
-    startTime: new Date(streamInfo.started_at),
-    thumbnailUrl: streamInfo.thumbnail_url,
-    gameId: game.id,
+  const dbStream = await createStreamWithGame({
+    title: stream.title,
+    startTime: stream.startDate,
+    thumbnailUrl: stream.thumbnailUrl,
+    gameId: dbGame.id,
   });
-
-  return stream;
+  console.log(`[EventSub] Stream/game tracked in DB.`);
+  return dbStream;
 }
