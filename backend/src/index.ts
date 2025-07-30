@@ -1,9 +1,10 @@
-import { tryCreateChatClient } from "./twitch/chat";
-import { registerChatHandlers } from "./twitch/chatHandlers";
-import { startEventSubWs } from "./twitch/eventsub";
-import { startTwitchAuthServer } from "./twitch/dualAuthServer";
-import { getTokenPaths } from "./twitch/authProviders";
-import { startChatPollingService } from "./twitch/chatPollingService";
+import { tryCreateChatClient } from "./twitch/chat/chat";
+import { registerChatHandlers } from "./twitch/chat/chatHandlers";
+import { startEventSubWs } from "./twitch/eventsub/eventsub";
+import { startTwitchAuthServer } from "./twitch/auth/dualAuthServer";
+import { getTokenPaths, getUserId } from "./twitch/auth/authProviders";
+import { syncChannelPointRewards } from "./services/channelReward.service";
+import { startChatPollingService } from "./twitch/chat/chatPollingService";
 import fs from "fs";
 import dotenv from "dotenv";
 dotenv.config();
@@ -23,6 +24,15 @@ async function start() {
   }
 
   try {
+    // Sync channel point rewards from Twitch to DB
+    const broadcasterId = getUserId("streamer");
+    const newRewards = await syncChannelPointRewards(broadcasterId);
+    if (newRewards > 0) {
+      console.log(`Added ${newRewards} new channel point rewards to DB.`);
+    } else {
+      console.log("Channel point rewards are up to date.");
+    }
+
     const chatClient = await tryCreateChatClient();
     await chatClient.connect();
     console.log("Twitch chat client connected and listening.");

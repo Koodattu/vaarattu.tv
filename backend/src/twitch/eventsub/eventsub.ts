@@ -1,6 +1,6 @@
 import { EventSubWsListener } from "@twurple/eventsub-ws";
 import { ApiClient } from "@twurple/api";
-import { getStreamerAuthProvider, getUserId } from "./authProviders";
+import { getStreamerAuthProvider, getUserId } from "../auth/authProviders";
 
 export async function startEventSubWs() {
   const authProvider = await getStreamerAuthProvider();

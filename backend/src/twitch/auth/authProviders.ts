@@ -7,9 +7,10 @@ dotenv.config();
 const clientId = process.env.TWITCH_CLIENT_ID!;
 const clientSecret = process.env.TWITCH_CLIENT_SECRET!;
 
+const backendRoot = path.resolve(__dirname, "../../../");
 const tokenPaths = {
-  streamer: path.join(__dirname, "../../tokens.streamer.json"),
-  bot: path.join(__dirname, "../../tokens.bot.json"),
+  streamer: path.join(backendRoot, "tokens.streamer.json"),
+  bot: path.join(backendRoot, "tokens.bot.json"),
 };
 
 let streamerAuthProvider: RefreshingAuthProvider | null = null;

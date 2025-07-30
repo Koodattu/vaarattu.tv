@@ -34,9 +34,10 @@ model Message {
 model ChannelReward {
   id        String   @id // Twitch reward ID
   title     String
-  prompt    String?
   cost      Int
   isEnabled Boolean
+  imageUrl  String?
+  backgroundColor String?
   redemptions Redemption[]
 }
 

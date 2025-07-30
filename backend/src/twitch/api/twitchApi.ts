@@ -1,7 +1,7 @@
-import { ApiClient, HelixChatChatter } from "@twurple/api";
+import { ApiClient, HelixChatChatter, HelixCustomReward } from "@twurple/api";
 import dotenv from "dotenv";
 dotenv.config();
-import { getStreamerAuthProvider } from "./authProviders";
+import { getStreamerAuthProvider } from "../auth/authProviders";
 
 const clientId = process.env.TWITCH_CLIENT_ID!;
 const clientSecret = process.env.TWITCH_CLIENT_SECRET!;
@@ -33,4 +33,11 @@ export async function getChannelChatters(broadcasterId: string): Promise<HelixCh
   const api = await getTwitchApiClientWithStreamer();
   const chattersResult = await api.chat.getChatters(broadcasterId);
   return chattersResult.data;
+}
+
+// Fetch the channel point rewards for a broadcaster
+export async function getChannelPointRewards(broadcasterId: string): Promise<HelixCustomReward[]> {
+  const api = await getTwitchApiClientWithStreamer();
+  const rewardsResult = await api.channelPoints.getCustomRewards(broadcasterId);
+  return rewardsResult;
 }

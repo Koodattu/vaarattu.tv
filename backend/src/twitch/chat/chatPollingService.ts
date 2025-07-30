@@ -1,5 +1,5 @@
-import { getChannelChatters } from "./twitchApi";
-import { getUserId } from "./authProviders";
+import { getChannelChatters } from "../api/twitchApi";
+import { getUserId } from "../auth/authProviders";
 
 async function pollChatters() {
   const BROADCASTER_ID = getUserId("streamer");
