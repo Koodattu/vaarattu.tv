@@ -1,7 +1,7 @@
 import { EventSubWsListener } from "@twurple/eventsub-ws";
 import { ApiClient } from "@twurple/api";
 import { getStreamerAuthProvider, getUserId } from "../auth/authProviders";
-import { processStreamOnlineEvent, processStreamOfflineEvent } from "../../services/stream.service";
+import { processStreamOnlineEvent, processStreamOfflineEvent, processChannelUpdateEvent } from "../../services/stream.service";
 
 export async function startEventSubWs() {
   const authProvider = await getStreamerAuthProvider();
@@ -15,6 +15,15 @@ export async function startEventSubWs() {
       await processStreamOnlineEvent(event, streamerChannel);
     } catch (err) {
       console.error("[EventSub] Failed to process stream online event:", err);
+    }
+  });
+
+  // Track game/category/title changes
+  listener.onChannelUpdate(streamerChannel, async (event) => {
+    try {
+      await processChannelUpdateEvent(event);
+    } catch (err) {
+      console.error("[EventSub] Failed to process channel update event:", err);
     }
   });
 

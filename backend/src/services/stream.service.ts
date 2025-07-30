@@ -1,6 +1,7 @@
 import prisma from "../prismaClient";
 import type { EventSubStreamOfflineEvent } from "@twurple/eventsub-base";
 import type { EventSubStreamOnlineEvent } from "@twurple/eventsub-base";
+import type { EventSubChannelUpdateEvent } from "@twurple/eventsub-base";
 import { syncChannelPointRewards } from "./channelReward.service";
 
 export async function processStreamOnlineEvent(event: EventSubStreamOnlineEvent, streamerChannel: string) {
@@ -79,5 +80,39 @@ async function endLatestStreamForBroadcaster(endTime: Date) {
   return prisma.stream.update({
     where: { id: latest.id },
     data: { endTime },
+  });
+}
+
+// Called when the channel updates (game/category/title change)
+export async function processChannelUpdateEvent(event: EventSubChannelUpdateEvent) {
+  // Find the latest stream (not ended)
+  const latest = await prisma.stream.findFirst({
+    where: { endTime: null },
+    orderBy: { startTime: "desc" },
+  });
+  if (!latest) {
+    console.warn("[EventSub] No open stream found to update on channel update event.");
+    return;
+  }
+
+  // Find or create the new game/category
+  const game = await event.getGame();
+  const dbGame = await findOrCreateGame({
+    id: event.categoryId,
+    name: event.categoryName,
+    boxArtUrl: game?.boxArtUrl,
+  });
+
+  // Only add the new game to the list of played games for this stream (do not update title)
+  await prisma.stream.update({
+    where: { id: latest.id },
+    data: {
+      games: { connect: { id: dbGame.id } },
+    },
+  });
+  console.log(`[EventSub] Added game to stream due to channel update event.`, {
+    streamId: latest.id,
+    gameId: dbGame.id,
+    gameName: dbGame.name,
   });
 }
