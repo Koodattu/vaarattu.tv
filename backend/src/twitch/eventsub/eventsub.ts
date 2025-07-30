@@ -3,6 +3,7 @@ import { ApiClient } from "@twurple/api";
 import { getStreamerAuthProvider, getUserId } from "../auth/authProviders";
 
 import { syncChannelPointRewards } from "../../services/channelReward.service";
+import { handleStreamOnline } from "../../services/stream.service";
 
 export async function startEventSubWs() {
   const authProvider = await getStreamerAuthProvider();
@@ -10,13 +11,29 @@ export async function startEventSubWs() {
   const apiClient = new ApiClient({ authProvider });
   const listener = new EventSubWsListener({ apiClient });
 
-  // Sync channel point rewards on stream start
+  // Sync channel point rewards and track stream/game on stream start
   listener.onStreamOnline(streamerChannel, async (event) => {
     try {
       const result = await syncChannelPointRewards(streamerChannel);
       console.log(`[EventSub] Synced channel point rewards on stream start:`, result);
+
+      const stream = await event.getStream();
+      if (stream) {
+        const game = await stream.getGame();
+        await handleStreamOnline({
+          title: stream.title,
+          started_at: stream.startDate.toISOString(),
+          thumbnail_url: stream.thumbnailUrl,
+          game_id: stream.gameId,
+          game_name: stream.gameName,
+          box_art_url: game?.boxArtUrl,
+        });
+        console.log(`[EventSub] Stream/game tracked in DB.`);
+      } else {
+        console.warn(`[EventSub] No stream info found for streamer on stream start.`);
+      }
     } catch (err) {
-      console.error("[EventSub] Failed to sync channel point rewards on stream start:", err);
+      console.error("[EventSub] Failed to sync channel point rewards or track stream/game on stream start:", err);
     }
   });
   listener.onChannelRedemptionAdd(streamerChannel, (event) => {

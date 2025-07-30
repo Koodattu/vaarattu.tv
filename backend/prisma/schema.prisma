@@ -56,6 +56,14 @@ model Stream {
   startTime DateTime
   endTime   DateTime?
   title     String
+  thumbnailUrl String?
+  games     Game[]   @relation("StreamGames")
+}
+model Game {
+  id        String   @id
+  name      String
+  boxArtUrl String?
+  streams   Stream[] @relation("StreamGames")
 }
 
 model ViewerProfile {
