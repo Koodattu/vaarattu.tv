@@ -1,4 +1,4 @@
-import { getChannelChatters } from "../api/twitchApi";
+import { getChannelChatters } from "./twitchApi";
 import { getUserId } from "../auth/authProviders";
 
 async function pollChatters() {

@@ -1,6 +1,6 @@
 import { ChatClient } from "@twurple/chat";
 import { getBotAuthProvider, getUserId } from "../auth/authProviders";
-import { getUserInfoById } from "../api/twitchApi";
+import { getUserInfoById } from "./twitchApi";
 
 export async function tryCreateChatClient() {
   const authProvider = await getBotAuthProvider();

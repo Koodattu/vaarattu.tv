@@ -1,10 +1,10 @@
-import { tryCreateChatClient } from "./twitch/chat/chat";
-import { registerChatHandlers } from "./twitch/chat/chatHandlers";
-import { startEventSubWs } from "./twitch/eventsub/eventsub";
+import { tryCreateChatClient } from "./twitch/api/chat";
+import { registerChatHandlers } from "./twitch/api/chatHandlers";
+import { startEventSubWs } from "./twitch/api/eventsub";
 import { startTwitchAuthServer } from "./twitch/auth/dualAuthServer";
 import { getTokenPaths, getUserId } from "./twitch/auth/authProviders";
 import { syncChannelPointRewards } from "./services/channelReward.service";
-import { startChatPollingService } from "./twitch/chat/chatPollingService";
+import { startChatPollingService } from "./twitch/api/chatPollingService";
 import fs from "fs";
 import dotenv from "dotenv";
 import prisma from "./prismaClient";
