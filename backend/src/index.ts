@@ -7,9 +7,18 @@ import { syncChannelPointRewards } from "./services/channelReward.service";
 import { startChatPollingService } from "./twitch/chat/chatPollingService";
 import fs from "fs";
 import dotenv from "dotenv";
+import prisma from "./prismaClient";
 dotenv.config();
 
 async function start() {
+  // Check DB connection before anything else
+  try {
+    await prisma.$connect();
+    console.log("Database connected successfully.");
+  } catch (err) {
+    console.error("Failed to connect to the database:", err);
+    process.exit(1);
+  }
   const { streamer, bot } = getTokenPaths();
   let missing = [];
   if (!fs.existsSync(streamer)) missing.push("streamer");
