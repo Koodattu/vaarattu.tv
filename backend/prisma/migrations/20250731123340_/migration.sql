@@ -1,0 +1,257 @@
+-- CreateTable
+CREATE TABLE "User" (
+    "id" SERIAL NOT NULL,
+    "twitchId" TEXT NOT NULL,
+    "login" TEXT NOT NULL,
+    "displayName" TEXT NOT NULL,
+    "avatar" TEXT,
+    "updated" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TwitchProfile" (
+    "userId" INTEGER NOT NULL,
+    "isFollowing" BOOLEAN NOT NULL DEFAULT false,
+    "followedSince" TIMESTAMP(3),
+    "isSubscribed" BOOLEAN NOT NULL DEFAULT false,
+    "subscriptionTier" TEXT,
+    "subscriptionMonths" INTEGER NOT NULL DEFAULT 0,
+    "subscriptionStreak" INTEGER NOT NULL DEFAULT 0,
+    "isModerator" BOOLEAN NOT NULL DEFAULT false,
+    "isVip" BOOLEAN NOT NULL DEFAULT false,
+    "lastUpdated" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TwitchProfile_pkey" PRIMARY KEY ("userId")
+);
+
+-- CreateTable
+CREATE TABLE "Badge" (
+    "id" SERIAL NOT NULL,
+    "twitchId" TEXT NOT NULL,
+    "setId" TEXT NOT NULL,
+    "version" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "imageUrl" TEXT,
+
+    CONSTRAINT "Badge_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "UserBadge" (
+    "userId" INTEGER NOT NULL,
+    "badgeId" INTEGER NOT NULL,
+
+    CONSTRAINT "UserBadge_pkey" PRIMARY KEY ("userId","badgeId")
+);
+
+-- CreateTable
+CREATE TABLE "Message" (
+    "id" SERIAL NOT NULL,
+    "twitchId" TEXT NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "content" TEXT NOT NULL,
+    "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Message_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ChannelReward" (
+    "id" SERIAL NOT NULL,
+    "twitchId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "cost" INTEGER NOT NULL,
+    "isEnabled" BOOLEAN NOT NULL,
+    "imageUrl" TEXT,
+    "backgroundColor" TEXT,
+
+    CONSTRAINT "ChannelReward_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Redemption" (
+    "id" SERIAL NOT NULL,
+    "twitchId" TEXT NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "rewardId" INTEGER NOT NULL,
+    "timestamp" TIMESTAMP(3) NOT NULL,
+    "customText" TEXT,
+
+    CONSTRAINT "Redemption_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Stream" (
+    "id" SERIAL NOT NULL,
+    "twitchId" TEXT NOT NULL,
+    "startTime" TIMESTAMP(3) NOT NULL,
+    "endTime" TIMESTAMP(3),
+    "thumbnailUrl" TEXT,
+
+    CONSTRAINT "Stream_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "StreamSegment" (
+    "id" SERIAL NOT NULL,
+    "streamId" INTEGER NOT NULL,
+    "startTime" TIMESTAMP(3) NOT NULL,
+    "endTime" TIMESTAMP(3),
+    "title" TEXT NOT NULL,
+    "gameId" INTEGER NOT NULL,
+
+    CONSTRAINT "StreamSegment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Game" (
+    "id" SERIAL NOT NULL,
+    "twitchId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "boxArtUrl" TEXT,
+
+    CONSTRAINT "Game_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EmoteUsage" (
+    "id" SERIAL NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "emote" TEXT NOT NULL,
+    "platform" TEXT NOT NULL,
+    "count" INTEGER NOT NULL,
+    "timestamp" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EmoteUsage_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ViewSession" (
+    "id" SERIAL NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "sessionStart" TIMESTAMP(3) NOT NULL,
+    "sessionEnd" TIMESTAMP(3),
+
+    CONSTRAINT "ViewSession_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ViewerProfile" (
+    "userId" INTEGER NOT NULL,
+    "aiSummary" TEXT,
+    "lastUpdate" TIMESTAMP(3),
+    "consent" BOOLEAN NOT NULL DEFAULT true,
+    "totalWatchTime" INTEGER NOT NULL DEFAULT 0,
+    "totalMessages" INTEGER NOT NULL DEFAULT 0,
+    "totalRedemptions" INTEGER NOT NULL DEFAULT 0,
+    "totalPointsSpent" INTEGER NOT NULL DEFAULT 0,
+    "favoriteEmote" TEXT,
+    "favoriteGame" TEXT,
+    "averageSessionTime" INTEGER NOT NULL DEFAULT 0,
+    "lastSeen" TIMESTAMP(3),
+
+    CONSTRAINT "ViewerProfile_pkey" PRIMARY KEY ("userId")
+);
+
+-- CreateTable
+CREATE TABLE "Achievement" (
+    "id" SERIAL NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "type" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "earnedAt" TIMESTAMP(3) NOT NULL,
+    "iconUrl" TEXT,
+
+    CONSTRAINT "Achievement_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "NameHistory" (
+    "id" SERIAL NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "previousName" TEXT NOT NULL,
+    "detectedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "NameHistory_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SetupItem" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "image" TEXT,
+    "modelUrl" TEXT,
+
+    CONSTRAINT "SetupItem_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_twitchId_key" ON "User"("twitchId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_login_key" ON "User"("login");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Badge_twitchId_key" ON "Badge"("twitchId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Badge_setId_version_key" ON "Badge"("setId", "version");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Message_twitchId_key" ON "Message"("twitchId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ChannelReward_twitchId_key" ON "ChannelReward"("twitchId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Redemption_twitchId_key" ON "Redemption"("twitchId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Stream_twitchId_key" ON "Stream"("twitchId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Game_twitchId_key" ON "Game"("twitchId");
+
+-- AddForeignKey
+ALTER TABLE "TwitchProfile" ADD CONSTRAINT "TwitchProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserBadge" ADD CONSTRAINT "UserBadge_userId_fkey" FOREIGN KEY ("userId") REFERENCES "TwitchProfile"("userId") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserBadge" ADD CONSTRAINT "UserBadge_badgeId_fkey" FOREIGN KEY ("badgeId") REFERENCES "Badge"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Message" ADD CONSTRAINT "Message_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Redemption" ADD CONSTRAINT "Redemption_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Redemption" ADD CONSTRAINT "Redemption_rewardId_fkey" FOREIGN KEY ("rewardId") REFERENCES "ChannelReward"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "StreamSegment" ADD CONSTRAINT "StreamSegment_streamId_fkey" FOREIGN KEY ("streamId") REFERENCES "Stream"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "StreamSegment" ADD CONSTRAINT "StreamSegment_gameId_fkey" FOREIGN KEY ("gameId") REFERENCES "Game"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EmoteUsage" ADD CONSTRAINT "EmoteUsage_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ViewSession" ADD CONSTRAINT "ViewSession_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ViewerProfile" ADD CONSTRAINT "ViewerProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Achievement" ADD CONSTRAINT "Achievement_userId_fkey" FOREIGN KEY ("userId") REFERENCES "ViewerProfile"("userId") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "NameHistory" ADD CONSTRAINT "NameHistory_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
