@@ -1,5 +1,5 @@
 import prisma from "../prismaClient";
-import { upsertUserFromTwitch, getUserIfFresh } from "./user.service";
+import { upsertUserFromTwitch } from "./user.service";
 import { HelixChatChatter } from "@twurple/api";
 
 /**

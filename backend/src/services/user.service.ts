@@ -1,6 +1,4 @@
-import { HelixUser } from "@twurple/api/lib/endpoints/user/HelixUser";
 import prisma from "../prismaClient";
-import { User } from ".prisma/client/default";
 import { getUserInfoById } from "../twitch/api/twitchApi";
 
 /**
