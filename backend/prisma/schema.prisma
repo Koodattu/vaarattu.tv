@@ -14,25 +14,77 @@ model User {
   displayName  String
   avatar       String?
   updated      DateTime      @default(now())
+
+  // Relations to other models
   messages     Message[]
   redemptions  Redemption[]
   viewSessions ViewSession[]
   nameHistory  NameHistory[]
   emoteUsages  EmoteUsage[]
-  viewerProfile ViewerProfile?
+
+  // One-to-one relations
+  viewerProfile    ViewerProfile?
+  twitchProfile    TwitchProfile?
+}
+
+model TwitchProfile {
+  userId              Int       @id
+  user                User      @relation(fields: [userId], references: [id])
+
+  // Follow/Sub status (changes frequently)
+  isFollowing         Boolean   @default(false)
+  followedSince       DateTime?
+  isSubscribed        Boolean   @default(false)
+  subscriptionTier    String?   // "1000", "2000", "3000"
+  subscriptionMonths  Int       @default(0)
+  subscriptionStreak  Int       @default(0)
+
+  // Badges (many-to-many through junction table)
+  userBadges          UserBadge[]
+
+  // Mod/VIP status
+  isModerator         Boolean   @default(false)
+  isVip               Boolean   @default(false)
+
+  // Last updated (for cache invalidation)
+  lastUpdated         DateTime  @default(now())
+}
+
+model Badge {
+  id           Int         @id @default(autoincrement())
+  twitchId     String      @unique  // Twitch's badge ID
+  setId        String      // Badge set ID (e.g., "subscriber", "vip", "moderator")
+  version      String      // Badge version (e.g., "0", "1", "3000")
+  title        String      // Display name
+  description  String?
+  imageUrl     String?
+
+  // Users who have this badge
+  userBadges   UserBadge[]
+
+  @@unique([setId, version])
+}
+
+model UserBadge {
+  userId          Int
+  badgeId         Int
+  twitchProfile   TwitchProfile @relation(fields: [userId], references: [userId])
+  badge           Badge         @relation(fields: [badgeId], references: [id])
+  @@id([userId, badgeId])
 }
 
 model Message {
   id        Int      @id @default(autoincrement())
-  messageId String   @unique
-  user      User     @relation(fields: [userId], references: [id])
+  twitchId  String   @unique
   userId    Int
+  user      User     @relation(fields: [userId], references: [id])
   content   String
   timestamp DateTime @default(now())
 }
 
 model ChannelReward {
-  id        String   @id
+  id        Int      @id @default(autoincrement())
+  twitchId  String   @unique
   title     String
   cost      Int
   isEnabled Boolean
@@ -43,10 +95,10 @@ model ChannelReward {
 
 model Redemption {
   id        Int      @id @default(autoincrement())
-  twitchRedemptionId String   @unique
-  user      User     @relation(fields: [userId], references: [id])
+  twitchId  String   @unique
   userId    Int
-  rewardId  String
+  user      User     @relation(fields: [userId], references: [id])
+  rewardId  Int
   channelReward ChannelReward @relation(fields: [rewardId], references: [id])
   timestamp DateTime
   customText String?
@@ -54,7 +106,8 @@ model Redemption {
 
 
 model Stream {
-  id           String          @id
+  id           Int             @id @default(autoincrement())
+  twitchId     String          @unique
   startTime    DateTime
   endTime      DateTime?
   thumbnailUrl String?
@@ -63,17 +116,18 @@ model Stream {
 
 model StreamSegment {
   id        Int      @id @default(autoincrement())
+  streamId  Int
   stream    Stream   @relation(fields: [streamId], references: [id])
-  streamId  String
   startTime DateTime
   endTime   DateTime?
   title     String
+  gameId    Int
   game      Game     @relation(fields: [gameId], references: [id])
-  gameId    String
 }
 
 model Game {
-  id        String   @id
+  id        Int      @id @default(autoincrement())
+  twitchId  String   @unique
   name      String
   boxArtUrl String?
   segments  StreamSegment[]
@@ -81,8 +135,8 @@ model Game {
 
 model EmoteUsage {
   id        Int      @id @default(autoincrement())
-  user      User     @relation(fields: [userId], references: [id])
   userId    Int
+  user      User     @relation(fields: [userId], references: [id])
   emote     String
   platform  String
   count     Int
@@ -91,27 +145,50 @@ model EmoteUsage {
 
 model ViewSession {
   id           Int      @id @default(autoincrement())
-  user         User     @relation(fields: [userId], references: [id])
   userId       Int
+  user         User     @relation(fields: [userId], references: [id])
   sessionStart DateTime
   sessionEnd   DateTime?
 }
 
 model ViewerProfile {
-  user      User     @relation(fields: [userId], references: [id])
-  userId    Int      @id
-  aiSummary String?
-  lastUpdate DateTime?
-  stats     Json?
-  consent   Boolean  @default(false)
-  achievements Json?
-  lastSeen     DateTime?
+  userId       Int       @id
+  user         User      @relation(fields: [userId], references: [id])
+
+  // AI-generated content
+  aiSummary    String?
+  lastUpdate   DateTime?
+  consent      Boolean   @default(true)
+
+  // Structured analytics (replace Json with proper fields)
+  totalWatchTime     Int       @default(0)  // minutes
+  totalMessages      Int       @default(0)
+  totalRedemptions   Int       @default(0)
+  totalPointsSpent   Int       @default(0)
+  favoriteEmote      String?
+  favoriteGame       String?
+  averageSessionTime Int       @default(0)  // minutes
+  lastSeen          DateTime?
+
+  // Achievements
+  achievements       Achievement[]
+}
+
+model Achievement {
+  id           Int     @id @default(autoincrement())
+  userId       Int
+  viewerProfile ViewerProfile @relation(fields: [userId], references: [userId])
+  type         String  // "first_message", "loyal_viewer", etc.
+  title        String
+  description  String
+  earnedAt     DateTime
+  iconUrl      String?
 }
 
 model NameHistory {
   id           Int      @id @default(autoincrement())
-  user         User     @relation(fields: [userId], references: [id])
   userId       Int
+  user         User     @relation(fields: [userId], references: [id])
   previousName String
   detectedAt   DateTime
 }
