@@ -3,14 +3,10 @@ import { upsertUserFromTwitch, getUserIfFresh } from "./user.service";
 import { EventSubChannelRedemptionAddEvent } from "@twurple/eventsub-base";
 
 export async function processChannelRedemptionEvent(event: EventSubChannelRedemptionAddEvent) {
-  let user = await getUserIfFresh(event.userId);
+  const user = await upsertUserFromTwitch(event.userId);
   if (!user) {
-    console.log(`[EventSub] User not found or stale, fetching from Twitch: ${event.userId}`);
-    const twitchUser = await event.getUser();
-    user = await upsertUserFromTwitch(twitchUser);
-  } else {
-    console.log(`[EventSub] Fresh user found: ${user.id}`);
-    user = await prisma.user.findUnique({ where: { twitchId: event.userId }, select: { id: true } });
+    console.warn(`[EventSub] User not found or stale, unable to process message: ${event.userId}`);
+    return;
   }
 
   // Ensure ChannelReward exists

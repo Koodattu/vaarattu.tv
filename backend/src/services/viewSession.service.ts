@@ -15,10 +15,10 @@ export async function processViewerSessions(chatters: HelixChatChatter[]) {
   const userIdMap: Record<string, number> = {};
 
   for (const chatter of chatters) {
-    let user = await getUserIfFresh(chatter.userId);
+    const user = await upsertUserFromTwitch(chatter.userId);
     if (!user) {
-      const twitchUser = await chatter.getUser();
-      user = await upsertUserFromTwitch(twitchUser);
+      console.warn(`[EventSub] User not found or stale, unable to process message: ${chatter.userId}`);
+      return;
     }
     userIdMap[chatter.userId] = user.id;
   }

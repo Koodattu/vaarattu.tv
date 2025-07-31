@@ -1,5 +1,7 @@
 import { HelixUser } from "@twurple/api/lib/endpoints/user/HelixUser";
 import prisma from "../prismaClient";
+import { User } from ".prisma/client/default";
+import { getUserInfoById } from "../twitch/api/twitchApi";
 
 /**
  * Returns user if exists and updated within 1 day, otherwise null.
@@ -23,10 +25,25 @@ export async function getUserIfFresh(twitchId: string): Promise<any | null> {
  * Only updates if user is missing or last updated >1 day ago.
  * If displayName changes, adds a NameHistory record for the previous value.
  */
-export async function upsertUserFromTwitch(user: HelixUser) {
+export async function upsertUserFromTwitch(twitchId: string): Promise<any | null> {
+  let dbUser = await getUserIfFresh(twitchId);
+  if (dbUser) {
+    console.log(`[EventSub] Fresh user found: ${dbUser.id}`);
+    dbUser = await prisma.user.findUnique({ where: { twitchId: twitchId }, select: { id: true } });
+    return dbUser;
+  }
+
+  console.log(`[EventSub] User not found or stale, fetching from Twitch: ${twitchId}`);
+  const twitchUser = await getUserInfoById(twitchId);
+
+  if (!twitchUser) {
+    console.warn(`[EventSub] Twitch user not found: ${twitchId}`);
+    return null;
+  }
+
   // Fetch user with all needed fields
   const existingUser = await prisma.user.findUnique({
-    where: { twitchId: user.id },
+    where: { twitchId: twitchUser.id },
     select: { id: true, login: true, displayName: true, updated: true },
   });
 
@@ -34,7 +51,7 @@ export async function upsertUserFromTwitch(user: HelixUser) {
   if (!existingUser) {
     // Create new user
     return prisma.user.create({
-      data: { twitchId: user.id, login: user.name, displayName: user.displayName, avatar: user.profilePictureUrl, updated: now },
+      data: { twitchId: twitchUser.id, login: twitchUser.name, displayName: twitchUser.displayName, avatar: twitchUser.profilePictureUrl, updated: now },
     });
   }
 
@@ -46,14 +63,14 @@ export async function upsertUserFromTwitch(user: HelixUser) {
 
   // Collect name history changes
   const nameHistoryEntries = [];
-  if (existingUser.displayName !== user.displayName) {
+  if (existingUser.displayName !== twitchUser.displayName) {
     nameHistoryEntries.push({
       userId: existingUser.id,
       previousName: existingUser.displayName,
       detectedAt: now,
     });
   }
-  if (existingUser.login !== user.name) {
+  if (existingUser.login !== twitchUser.name) {
     nameHistoryEntries.push({
       userId: existingUser.id,
       previousName: existingUser.login,
@@ -66,7 +83,7 @@ export async function upsertUserFromTwitch(user: HelixUser) {
 
   // Update user and return updated object
   return prisma.user.update({
-    where: { twitchId: user.id },
-    data: { login: user.name, displayName: user.displayName, avatar: user.profilePictureUrl, updated: now },
+    where: { twitchId: twitchUser.id },
+    data: { login: twitchUser.name, displayName: twitchUser.displayName, avatar: twitchUser.profilePictureUrl, updated: now },
   });
 }

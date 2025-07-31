@@ -1,16 +1,12 @@
 import prisma from "../prismaClient";
-import { upsertUserFromTwitch, getUserIfFresh } from "./user.service";
+import { upsertUserFromTwitch } from "./user.service";
 import { EventSubChannelChatMessageEvent } from "@twurple/eventsub-base";
 
 export async function processChatMessageEvent(event: EventSubChannelChatMessageEvent) {
-  let user = await getUserIfFresh(event.chatterId);
+  const user = await upsertUserFromTwitch(event.chatterId);
   if (!user) {
-    console.log(`[EventSub] User not found or stale, fetching from Twitch: ${event.chatterId}`);
-    const chatter = await event.getChatter();
-    user = await upsertUserFromTwitch(chatter);
-  } else {
-    console.log(`[EventSub] Fresh user found: ${user.id}`);
-    user = await prisma.user.findUnique({ where: { twitchId: event.chatterId }, select: { id: true } });
+    console.warn(`[EventSub] User not found or stale, unable to process message: ${event.chatterId}`);
+    return;
   }
   await prisma.message.create({
     data: {

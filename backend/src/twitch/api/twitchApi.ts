@@ -1,7 +1,7 @@
 import { ApiClient, HelixChatChatter, HelixCustomReward } from "@twurple/api";
+import { getStreamerAuthProvider } from "../auth/authProviders";
 import dotenv from "dotenv";
 dotenv.config();
-import { getStreamerAuthProvider } from "../auth/authProviders";
 
 const clientId = process.env.TWITCH_CLIENT_ID!;
 const clientSecret = process.env.TWITCH_CLIENT_SECRET!;
