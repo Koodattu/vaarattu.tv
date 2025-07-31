@@ -52,20 +52,31 @@ model Redemption {
   customText String?
 }
 
+
 model Stream {
-  id        String   @id
+  id           String          @id
+  startTime    DateTime
+  endTime      DateTime?
+  thumbnailUrl String?
+  segments     StreamSegment[]
+}
+
+model StreamSegment {
+  id        Int      @id @default(autoincrement())
+  stream    Stream   @relation(fields: [streamId], references: [id])
+  streamId  String
   startTime DateTime
   endTime   DateTime?
   title     String
-  thumbnailUrl String?
-  games     Game[]   @relation("StreamGames")
+  game      Game     @relation(fields: [gameId], references: [id])
+  gameId    String
 }
 
 model Game {
   id        String   @id
   name      String
   boxArtUrl String?
-  streams   Stream[] @relation("StreamGames")
+  segments  StreamSegment[]
 }
 
 model EmoteUsage {
