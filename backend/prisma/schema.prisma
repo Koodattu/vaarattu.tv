@@ -98,8 +98,8 @@ model Redemption {
   twitchId  String   @unique
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
-  rewardId  Int
-  channelReward ChannelReward @relation(fields: [rewardId], references: [id])
+  rewardId  String
+  channelReward ChannelReward @relation(fields: [rewardId], references: [twitchId])
   timestamp DateTime
   customText String?
 }

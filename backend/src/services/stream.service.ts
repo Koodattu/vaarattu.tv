@@ -23,7 +23,7 @@ export async function processStreamOnlineEvent(event: EventSubStreamOnlineEvent,
   // Create stream entry and initial segment
   const dbStream = await prisma.stream.create({
     data: {
-      id: stream.id,
+      twitchId: stream.id,
       startTime: stream.startDate,
       thumbnailUrl: stream.thumbnailUrl,
       segments: {
@@ -41,12 +41,12 @@ export async function processStreamOnlineEvent(event: EventSubStreamOnlineEvent,
 }
 
 async function findOrCreateGame(game: { id: string; name: string; boxArtUrl?: string }) {
-  let dbGame = await prisma.game.findUnique({ where: { id: game.id } });
+  let dbGame = await prisma.game.findUnique({ where: { twitchId: game.id } });
   if (!dbGame) {
     console.log("Game not found, creating new entry:", game);
     dbGame = await prisma.game.create({
       data: {
-        id: game.id,
+        twitchId: game.id,
         name: game.name,
         boxArtUrl: game.boxArtUrl,
       },

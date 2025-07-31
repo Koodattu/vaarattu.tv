@@ -14,7 +14,7 @@ export async function processChatMessageEvent(event: EventSubChannelChatMessageE
   }
   await prisma.message.create({
     data: {
-      messageId: event.messageId,
+      twitchId: event.messageId,
       content: event.messageText,
       userId: user.id,
       timestamp: new Date(),

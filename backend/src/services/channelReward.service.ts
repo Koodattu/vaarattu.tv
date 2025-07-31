@@ -5,7 +5,7 @@ import type { ChannelReward } from "@prisma/client";
 export async function syncChannelPointRewards(broadcasterId: string) {
   const twitchRewards = await getChannelPointRewards(broadcasterId);
   const dbRewards: ChannelReward[] = await prisma.channelReward.findMany();
-  const dbRewardMap = new Map<string, ChannelReward>(dbRewards.map((r) => [r.id, r]));
+  const dbRewardMap = new Map<string, ChannelReward>(dbRewards.map((r) => [r.twitchId, r]));
 
   const toCreate: any[] = [];
   const toUpdate: { id: string; data: any }[] = [];
@@ -21,7 +21,7 @@ export async function syncChannelPointRewards(broadcasterId: string) {
     };
     if (!dbReward) {
       toCreate.push({
-        id: reward.id,
+        twitchId: reward.id,
         ...rewardData,
       });
     } else {
@@ -46,9 +46,7 @@ export async function syncChannelPointRewards(broadcasterId: string) {
   }
 
   if (toUpdate.length > 0) {
-    await prisma.$transaction(
-      toUpdate.map((item) => prisma.channelReward.update({ where: { id: item.id }, data: item.data }))
-    );
+    await prisma.$transaction(toUpdate.map((item) => prisma.channelReward.update({ where: { twitchId: item.id }, data: item.data })));
     updated = toUpdate.length;
   }
 

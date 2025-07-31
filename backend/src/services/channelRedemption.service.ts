@@ -14,12 +14,12 @@ export async function processChannelRedemptionEvent(event: EventSubChannelRedemp
   }
 
   // Ensure ChannelReward exists
-  let channelReward = await prisma.channelReward.findUnique({ where: { id: event.rewardId } });
+  let channelReward = await prisma.channelReward.findUnique({ where: { twitchId: event.rewardId } });
   if (!channelReward) {
     const reward = await event.getReward();
     channelReward = await prisma.channelReward.create({
       data: {
-        id: reward.id,
+        twitchId: reward.id,
         title: reward.title,
         cost: reward.cost,
         isEnabled: reward.isEnabled,
@@ -32,7 +32,7 @@ export async function processChannelRedemptionEvent(event: EventSubChannelRedemp
 
   await prisma.redemption.create({
     data: {
-      twitchRedemptionId: event.id,
+      twitchId: event.id,
       userId: user.id,
       rewardId: event.rewardId,
       timestamp: event.redemptionDate,
