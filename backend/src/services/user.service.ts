@@ -1,3 +1,4 @@
+import { HelixUser } from "@twurple/api/lib/endpoints/user/HelixUser";
 import prisma from "../prismaClient";
 
 /**
@@ -22,10 +23,10 @@ export async function getUserIfFresh(twitchId: string): Promise<any | null> {
  * Only updates if user is missing or last updated >1 day ago.
  * If displayName changes, adds a NameHistory record for the previous value.
  */
-export async function upsertUserFromTwitch(twitchId: string, login: string, displayName: string, avatar?: string) {
+export async function upsertUserFromTwitch(user: HelixUser) {
   // Fetch user with all needed fields
   const existingUser = await prisma.user.findUnique({
-    where: { twitchId },
+    where: { twitchId: user.id },
     select: { id: true, login: true, displayName: true, updated: true },
   });
 
@@ -33,7 +34,7 @@ export async function upsertUserFromTwitch(twitchId: string, login: string, disp
   if (!existingUser) {
     // Create new user
     return prisma.user.create({
-      data: { twitchId, login, displayName, avatar, updated: now },
+      data: { twitchId: user.id, login: user.name, displayName: user.displayName, avatar: user.profilePictureUrl, updated: now },
     });
   }
 
@@ -45,14 +46,14 @@ export async function upsertUserFromTwitch(twitchId: string, login: string, disp
 
   // Collect name history changes
   const nameHistoryEntries = [];
-  if (existingUser.displayName !== displayName) {
+  if (existingUser.displayName !== user.displayName) {
     nameHistoryEntries.push({
       userId: existingUser.id,
       previousName: existingUser.displayName,
       detectedAt: now,
     });
   }
-  if (existingUser.login !== login) {
+  if (existingUser.login !== user.name) {
     nameHistoryEntries.push({
       userId: existingUser.id,
       previousName: existingUser.login,
@@ -65,7 +66,7 @@ export async function upsertUserFromTwitch(twitchId: string, login: string, disp
 
   // Update user and return updated object
   return prisma.user.update({
-    where: { twitchId },
-    data: { login, displayName, avatar, updated: now },
+    where: { twitchId: user.id },
+    data: { login: user.name, displayName: user.displayName, avatar: user.profilePictureUrl, updated: now },
   });
 }

@@ -18,7 +18,7 @@ export async function processViewerSessions(chatters: HelixChatChatter[]) {
     let user = await getUserIfFresh(chatter.userId);
     if (!user) {
       const twitchUser = await chatter.getUser();
-      user = await upsertUserFromTwitch(chatter.userId, chatter.userName, chatter.userDisplayName, twitchUser.profilePictureUrl);
+      user = await upsertUserFromTwitch(twitchUser);
     }
     userIdMap[chatter.userId] = user.id;
   }

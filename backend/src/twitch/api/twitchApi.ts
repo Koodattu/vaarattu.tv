@@ -41,3 +41,39 @@ export async function getChannelPointRewards(broadcasterId: string): Promise<Hel
   const rewardsResult = await api.channelPoints.getCustomRewards(broadcasterId);
   return rewardsResult;
 }
+
+// Fetch global badges
+export async function getGlobalBadges() {
+  const api = await getTwitchApiClientWithStreamer();
+  return await api.chat.getGlobalBadges();
+}
+
+// Fetch channel-specific badges
+export async function getChannelBadges(broadcasterId: string) {
+  const api = await getTwitchApiClientWithStreamer();
+  return await api.chat.getChannelBadges(broadcasterId);
+}
+
+// Check if user is VIP
+export async function isUserVip(broadcasterId: string, userId: string): Promise<boolean> {
+  const api = await getTwitchApiClientWithStreamer();
+  try {
+    const vips = await api.channels.getVips(broadcasterId);
+    return vips.data.some((vip) => vip.id === userId);
+  } catch (error) {
+    console.error("Error checking VIP status:", error);
+    return false;
+  }
+}
+
+// Check if user is moderator
+export async function isUserModerator(broadcasterId: string, userId: string): Promise<boolean> {
+  const api = await getTwitchApiClientWithStreamer();
+  try {
+    const moderators = await api.moderation.getModerators(broadcasterId);
+    return moderators.data.some((mod) => mod.userId === userId);
+  } catch (error) {
+    console.error("Error checking moderator status:", error);
+    return false;
+  }
+}

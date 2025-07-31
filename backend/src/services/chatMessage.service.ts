@@ -7,7 +7,7 @@ export async function processChatMessageEvent(event: EventSubChannelChatMessageE
   if (!user) {
     console.log(`[EventSub] User not found or stale, fetching from Twitch: ${event.chatterId}`);
     const chatter = await event.getChatter();
-    user = await upsertUserFromTwitch(event.chatterId, event.chatterName, event.chatterDisplayName, chatter.profilePictureUrl);
+    user = await upsertUserFromTwitch(chatter);
   } else {
     console.log(`[EventSub] Fresh user found: ${user.id}`);
     user = await prisma.user.findUnique({ where: { twitchId: event.chatterId }, select: { id: true } });

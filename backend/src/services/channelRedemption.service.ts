@@ -7,7 +7,7 @@ export async function processChannelRedemptionEvent(event: EventSubChannelRedemp
   if (!user) {
     console.log(`[EventSub] User not found or stale, fetching from Twitch: ${event.userId}`);
     const twitchUser = await event.getUser();
-    user = await upsertUserFromTwitch(event.userId, event.userName, event.userDisplayName, twitchUser.profilePictureUrl);
+    user = await upsertUserFromTwitch(twitchUser);
   } else {
     console.log(`[EventSub] Fresh user found: ${user.id}`);
     user = await prisma.user.findUnique({ where: { twitchId: event.userId }, select: { id: true } });
