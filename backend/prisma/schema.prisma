@@ -43,11 +43,11 @@ model ChannelReward {
 
 model Redemption {
   id        Int      @id @default(autoincrement())
+  twitchRedemptionId String   @unique
   user      User     @relation(fields: [userId], references: [id])
   userId    Int
   rewardId  String
   channelReward ChannelReward @relation(fields: [rewardId], references: [id])
-  points    Int
   timestamp DateTime
   customText String?
 }

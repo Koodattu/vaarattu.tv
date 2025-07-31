@@ -3,6 +3,7 @@ import { ApiClient } from "@twurple/api";
 import { getStreamerAuthProvider, getUserId } from "../auth/authProviders";
 import { processStreamOnlineEvent, processStreamOfflineEvent, processChannelUpdateEvent } from "../../services/stream.service";
 import { processChatMessageEvent } from "../../services/chatMessage.service";
+import { processChannelRedemptionEvent } from "../../services/channelRedemption.service";
 
 export async function startEventSubWs() {
   const authProvider = await getStreamerAuthProvider();
@@ -40,6 +41,7 @@ export async function startEventSubWs() {
     }
   });
 
+  // Listen for chat messages
   listener.onChannelChatMessage(streamerChannel, streamerChannel, async (event) => {
     try {
       console.log("[EventSub] Chat message event received: ", event.chatterName, event.messageText);
@@ -49,18 +51,36 @@ export async function startEventSubWs() {
     }
   });
 
-  listener.onChannelRedemptionAdd(streamerChannel, (event) => {
-    console.log("[EventSub] Channel Point Redemption:", event);
+  // Listen for channel point redemptions
+  listener.onChannelRedemptionAdd(streamerChannel, async (event) => {
+    try {
+      console.log("[EventSub] Channel Point Redemption:", event);
+      await processChannelRedemptionEvent(event);
+    } catch (err) {
+      console.error("[EventSub] Failed to process channel point redemption:", err);
+    }
   });
+
+  listener.onChannelFollow(streamerChannel, streamerChannel, (event) => {
+    console.log("[EventSub] Follow:", event);
+  });
+
   listener.onChannelSubscription(streamerChannel, (event) => {
     console.log("[EventSub] Subscription:", event);
   });
+
+  listener.onChannelSubscriptionEnd(streamerChannel, (event) => {
+    console.log("[EventSub] Subscription End:", event);
+  });
+
   listener.onChannelSubscriptionGift(streamerChannel, (event) => {
     console.log("[EventSub] Subscription Gift:", event);
   });
+
   listener.onChannelCheer(streamerChannel, (event) => {
     console.log("[EventSub] Cheer:", event);
   });
+
   listener.onChannelRaidTo(streamerChannel, (event) => {
     console.log("[EventSub] Raid:", event);
   });
