@@ -1,5 +1,6 @@
 import prisma from "../prismaClient";
 import { getUserInfoById } from "../twitch/api/twitchApi";
+import { upsertTwitchProfile, getTwitchProfileIfFresh } from "./twitchProfile.service";
 
 /**
  * Returns user if exists and updated within 1 day, otherwise null.
@@ -48,9 +49,14 @@ export async function upsertUserFromTwitch(twitchId: string): Promise<any | null
   const now = new Date();
   if (!existingUser) {
     // Create new user
-    return prisma.user.create({
+    const newUser = await prisma.user.create({
       data: { twitchId: twitchUser.id, login: twitchUser.name, displayName: twitchUser.displayName, avatar: twitchUser.profilePictureUrl, updated: now },
     });
+
+    // Create TwitchProfile for new user
+    await upsertTwitchProfile(newUser.id, twitchUser);
+
+    return newUser;
   }
 
   const updated = existingUser.updated instanceof Date ? existingUser.updated.getTime() : new Date(existingUser.updated).getTime();
@@ -80,8 +86,13 @@ export async function upsertUserFromTwitch(twitchId: string): Promise<any | null
   }
 
   // Update user and return updated object
-  return prisma.user.update({
+  const updatedUser = await prisma.user.update({
     where: { twitchId: twitchUser.id },
     data: { login: twitchUser.name, displayName: twitchUser.displayName, avatar: twitchUser.profilePictureUrl, updated: now },
   });
+
+  // Update TwitchProfile data (follow status, subscription, badges, etc.)
+  await upsertTwitchProfile(updatedUser.id, twitchUser);
+
+  return updatedUser;
 }
