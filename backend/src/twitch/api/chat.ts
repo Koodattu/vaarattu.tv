@@ -11,8 +11,9 @@ export async function tryCreateChatClient() {
     return user.name;
   });
   const chatClient = new ChatClient({
-    authProvider,
+    authProvider: authProvider,
     channels: [streamerName],
+    requestMembershipEvents: true,
   });
   return chatClient;
 }
