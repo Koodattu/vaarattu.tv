@@ -4,6 +4,7 @@ import { startTwitchAuthServer } from "./twitch/auth/dualAuthServer";
 import { getTokenPaths, getUserId } from "./twitch/auth/authProviders";
 import { syncChannelPointRewards } from "./services/channelReward.service";
 import { startChatPollingService } from "./twitch/api/chatPollingService";
+import { updateAvailableBadges } from "./services/twitchBadge.service";
 import fs from "fs";
 import dotenv from "dotenv";
 import prisma from "./prismaClient";
@@ -40,6 +41,12 @@ async function start() {
       console.log(`Added ${newRewards.added} and updated ${newRewards.updated} channel point rewards to DB.`);
     } else {
       console.log("Channel point rewards are up to date.");
+    }
+    const newBadges = await updateAvailableBadges();
+    if (newBadges.global > 0 || newBadges.channel > 0) {
+      console.log(`Updated ${newBadges.global} global and ${newBadges.channel} channel badges in the database.`);
+    } else {
+      console.log("Badges are up to date.");
     }
 
     const chatClient = await tryCreateChatClient();

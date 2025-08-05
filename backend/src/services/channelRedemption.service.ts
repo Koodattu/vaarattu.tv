@@ -19,7 +19,7 @@ export async function processChannelRedemptionEvent(event: EventSubChannelRedemp
         title: reward.title,
         cost: reward.cost,
         isEnabled: reward.isEnabled,
-        imageUrl: reward.getImageUrl ? reward.getImageUrl(1) : undefined,
+        imageUrl: reward.getImageUrl ? reward.getImageUrl(4) : undefined,
         backgroundColor: reward.backgroundColor,
       },
     });

@@ -1,7 +1,7 @@
 import prisma from "../prismaClient";
 import { HelixUser } from "@twurple/api";
 import { getUserId } from "../twitch/auth/authProviders";
-import { getChannelBadges, getGlobalBadges } from "../twitch/api/twitchApi";
+import { isUserVip, isUserModerator } from "../twitch/api/twitchApi";
 
 /**
  * Updates or creates a TwitchProfile for a user with fresh data from Twitch API
@@ -14,12 +14,10 @@ export async function upsertTwitchProfile(userId: number, twitchUser: HelixUser)
     const streamerId = getUserId("streamer");
 
     // Extract successful results
-    const followedChannel = await twitchUser.getFollowedChannel(streamerId).catch(() => null);
-    const activeSubscription = await twitchUser.getSubscriptionTo(streamerId).catch(() => null);
-    const isModerator = false; // Assume false by default, will be set later
-    const isVip = false; // Assume false by default, will be set later
-    const allGlobalBadges = await getGlobalBadges().catch(() => []);
-    const allChannelBadges = await getChannelBadges(streamerId).catch(() => []);
+    const followedChannel = await twitchUser.getChannelFollower(streamerId).catch(() => null);
+    const activeSubscription = await twitchUser.getSubscriber(streamerId).catch(() => null);
+    const isModerator = await isUserModerator(twitchUser.id, streamerId).catch(() => false);
+    const isVip = await isUserVip(twitchUser.id, streamerId).catch(() => false);
 
     // Prepare TwitchProfile data - use broadcaster subscription data if available for more details
     const twitchProfileData = {
@@ -55,10 +53,6 @@ export async function upsertTwitchProfile(userId: number, twitchUser: HelixUser)
       });
     }
 
-    // Update badges - for now we'll store available badges but not assign them automatically
-    // Badge assignment would require parsing chat messages to see which badges users actually have
-    await updateAvailableBadges(allGlobalBadges, allChannelBadges);
-
     console.log(
       `[TwitchProfile] Updated profile for user ${twitchUser.displayName}: Follow: ${twitchProfileData.isFollowing}, Sub: ${twitchProfileData.isSubscribed}, Mod: ${twitchProfileData.isModerator}, VIP: ${twitchProfileData.isVip}`
     );
@@ -67,45 +61,6 @@ export async function upsertTwitchProfile(userId: number, twitchUser: HelixUser)
   } catch (error) {
     console.error(`[TwitchProfile] Error updating profile for user ${userId}:`, error);
     return null;
-  }
-}
-
-/**
- * Updates the available badges in the database from Twitch API
- * @param globalBadges Global badges from Twitch
- * @param channelBadges Channel-specific badges from Twitch
- */
-async function updateAvailableBadges(globalBadges: any[], channelBadges: any[]) {
-  try {
-    const allBadges = [...globalBadges, ...channelBadges];
-
-    for (const badgeSet of allBadges) {
-      for (const version of badgeSet.versions) {
-        await prisma.badge.upsert({
-          where: {
-            setId_version: {
-              setId: badgeSet.id,
-              version: version.id,
-            },
-          },
-          update: {
-            title: version.title,
-            description: version.description,
-            imageUrl: version.getImageUrl(1), // 1x resolution
-          },
-          create: {
-            twitchId: `${badgeSet.id}_${version.id}`,
-            setId: badgeSet.id,
-            version: version.id,
-            title: version.title,
-            description: version.description,
-            imageUrl: version.getImageUrl(1), // 1x resolution
-          },
-        });
-      }
-    }
-  } catch (error) {
-    console.error("[TwitchProfile] Error updating badges:", error);
   }
 }
 
