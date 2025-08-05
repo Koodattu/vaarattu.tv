@@ -1,5 +1,6 @@
 import prisma from "../prismaClient";
 import { upsertUserFromTwitch } from "./user.service";
+import { updateUserBadges } from "./twitchBadge.service";
 import { EventSubChannelChatMessageEvent } from "@twurple/eventsub-base";
 
 export async function processChatMessageEvent(event: EventSubChannelChatMessageEvent) {
@@ -8,6 +9,8 @@ export async function processChatMessageEvent(event: EventSubChannelChatMessageE
     console.warn(`[EventSub] User not found or stale, unable to process message: ${event.chatterName}`);
     return;
   }
+
+  // Process the message
   await prisma.message.create({
     data: {
       twitchId: event.messageId,
@@ -16,4 +19,7 @@ export async function processChatMessageEvent(event: EventSubChannelChatMessageE
       timestamp: new Date(),
     },
   });
+
+  // Update user badges based on current badge set from the message
+  await updateUserBadges(user.id, user.login, event.badges);
 }

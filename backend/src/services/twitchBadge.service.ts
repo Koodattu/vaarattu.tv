@@ -19,6 +19,83 @@ export async function updateAvailableBadges() {
   };
 }
 
+/**
+ * Updates user badges based on their current badge set from chat message
+ * Efficiently handles adding new badges and removing old ones
+ * @param userId Database user ID
+ * @param currentBadges Badge record from chat event (e.g., { broadcaster: '1', subscriber: '3060' })
+ */
+export async function updateUserBadges(userId: number, userLogin: string, currentBadges: Record<string, string>): Promise<void> {
+  try {
+    // Convert badge record to twitchIds format (setId_version)
+    const currentBadgeIds = Object.entries(currentBadges).map(([setId, version]) => `${setId}_${version}`);
+
+    // Get current user badges from database
+    const existingUserBadges = await prisma.userBadge.findMany({
+      where: { userId },
+      include: { badge: true },
+    });
+
+    const existingBadgeIds = existingUserBadges.map((ub) => ub.badge.twitchId);
+
+    // Find badges to add and remove
+    const badgesToAdd = currentBadgeIds.filter((id) => !existingBadgeIds.includes(id));
+    const badgesToRemove = existingBadgeIds.filter((id) => !currentBadgeIds.includes(id));
+
+    // Early return if no changes needed
+    if (badgesToAdd.length === 0 && badgesToRemove.length === 0) {
+      console.log(`[Badge] No changes for user ${userLogin}, skipping update`);
+      return;
+    }
+
+    // Execute badge updates in a transaction
+    await prisma.$transaction(async (tx) => {
+      // Remove old badges
+      if (badgesToRemove.length > 0) {
+        const badgeIdsToRemove = existingUserBadges.filter((ub) => badgesToRemove.includes(ub.badge.twitchId)).map((ub) => ub.badgeId);
+
+        await tx.userBadge.deleteMany({
+          where: {
+            userId,
+            badgeId: { in: badgeIdsToRemove },
+          },
+        });
+      }
+
+      // Add new badges
+      if (badgesToAdd.length > 0) {
+        // Find badge records for the new badges
+        const badgesToCreate = await tx.badge.findMany({
+          where: { twitchId: { in: badgesToAdd } },
+        });
+
+        const userBadgeData = badgesToCreate.map((badge) => ({
+          userId,
+          badgeId: badge.id,
+        }));
+
+        if (userBadgeData.length > 0) {
+          await tx.userBadge.createMany({
+            data: userBadgeData,
+            skipDuplicates: true,
+          });
+        }
+
+        // Log warning for missing badges
+        const foundBadgeIds = badgesToCreate.map((b) => b.twitchId);
+        const missingBadges = badgesToAdd.filter((id) => !foundBadgeIds.includes(id));
+        if (missingBadges.length > 0) {
+          console.warn(`[Badge] Missing badges in database: ${missingBadges.join(", ")}`);
+        }
+      }
+    });
+
+    console.log(`[Badge] Updated badges for user ${userLogin}: +${badgesToAdd.length} -${badgesToRemove.length}`);
+  } catch (error) {
+    console.error(`[Badge] Error updating badges for user ${userLogin}:`, error);
+  }
+}
+
 async function syncBadges(badgeSets: any[]) {
   // Flatten all badge versions from all sets
   const allBadgeVersions: any[] = [];
