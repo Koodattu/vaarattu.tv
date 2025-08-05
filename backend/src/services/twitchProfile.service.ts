@@ -60,7 +60,7 @@ export async function upsertTwitchProfile(userId: number, twitchUser: HelixUser)
     await updateAvailableBadges(allGlobalBadges, allChannelBadges);
 
     console.log(
-      `[TwitchProfile] Updated profile for user ${userId}: Follow: ${twitchProfileData.isFollowing}, Sub: ${twitchProfileData.isSubscribed}, Mod: ${twitchProfileData.isModerator}, VIP: ${twitchProfileData.isVip}`
+      `[TwitchProfile] Updated profile for user ${twitchUser.displayName}: Follow: ${twitchProfileData.isFollowing}, Sub: ${twitchProfileData.isSubscribed}, Mod: ${twitchProfileData.isModerator}, VIP: ${twitchProfileData.isVip}`
     );
 
     return twitchProfile;
