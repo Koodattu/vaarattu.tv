@@ -5,6 +5,7 @@ import { getTokenPaths, getUserId } from "./twitch/auth/authProviders";
 import { syncChannelPointRewards } from "./services/channelReward.service";
 import { startChatPollingService } from "./twitch/api/chatPollingService";
 import { updateAvailableBadges } from "./services/twitchBadge.service";
+import { initializeEmotes } from "./services/emote.service";
 import fs from "fs";
 import dotenv from "dotenv";
 import prisma from "./prismaClient";
@@ -48,6 +49,9 @@ async function start() {
     } else {
       console.log("Badges are up to date.");
     }
+
+    // Initialize emote system
+    await initializeEmotes();
 
     const chatClient = await tryCreateChatClient();
     chatClient.connect();

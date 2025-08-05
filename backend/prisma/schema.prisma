@@ -133,14 +133,32 @@ model Game {
   segments  StreamSegment[]
 }
 
+model Emote {
+  id        Int      @id @default(autoincrement())
+  name      String   // "Kappa", "KEKW", etc.
+  platform  String   // "twitch", "bttv", "ffz", "7tv"
+  emoteId   String   // Platform-specific emote ID
+  imageUrl  String?  // URL to emote image
+  isGlobal  Boolean  @default(true) // for channel-specific emotes
+  channelId String?  // for channel-specific emotes
+
+  @@unique([name, platform])
+  @@unique([platform, emoteId])
+
+  // Relations
+  emoteUsages EmoteUsage[]
+}
+
 model EmoteUsage {
   id        Int      @id @default(autoincrement())
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
-  emote     String
-  platform  String
-  count     Int
-  timestamp DateTime
+  emoteId   Int
+  emote     Emote    @relation(fields: [emoteId], references: [id])
+  count     Int      @default(1)
+
+  // Ensure one record per user/emote combination
+  @@unique([userId, emoteId])
 }
 
 model ViewSession {
