@@ -1,11 +1,11 @@
 import prisma from "../prismaClient";
-import { upsertUserFromTwitch, getUserIfFresh } from "./user.service";
+import { upsertUserFromTwitch } from "./user.service";
 import { EventSubChannelRedemptionAddEvent } from "@twurple/eventsub-base";
 
 export async function processChannelRedemptionEvent(event: EventSubChannelRedemptionAddEvent) {
-  const user = await upsertUserFromTwitch(event.userId);
+  const user = await upsertUserFromTwitch(event.userName);
   if (!user) {
-    console.warn(`[EventSub] User not found or stale, unable to process message: ${event.userId}`);
+    console.warn(`[EventSub] User not found or stale, unable to process message: ${event.userName}`);
     return;
   }
 

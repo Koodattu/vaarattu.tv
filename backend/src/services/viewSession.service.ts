@@ -3,6 +3,83 @@ import { upsertUserFromTwitch } from "./user.service";
 import { HelixChatChatter } from "@twurple/api";
 
 /**
+ * Handles a single user joining the chat.
+ * Upserts the user and starts a viewing session if none exists.
+ * @param username The username of the user who joined
+ */
+export async function handleUserJoin(username: string) {
+  console.log(`[Chat Join] Processing join for: ${username}`);
+
+  const user = await upsertUserFromTwitch(username);
+  if (!user) {
+    console.warn(`[Chat Join] Failed to upsert user: ${username}`);
+    return;
+  }
+
+  // Check if user already has an open session
+  const existingSession = await prisma.viewSession.findFirst({
+    where: {
+      userId: user.id,
+      sessionEnd: null,
+    },
+  });
+
+  if (existingSession) {
+    console.log(`[Chat Join] User ${username} already has an open session, skipping`);
+    return;
+  }
+
+  // Start new session
+  const now = new Date();
+  await prisma.viewSession.create({
+    data: {
+      userId: user.id,
+      sessionStart: now,
+      sessionEnd: null,
+    },
+  });
+
+  console.log(`[Chat Join] Started new session for: ${username}`);
+}
+
+/**
+ * Handles a single user leaving the chat.
+ * Ends the viewing session if one exists.
+ * @param username The username of the user who left
+ */
+export async function handleUserPart(username: string) {
+  console.log(`[Chat Part] Processing part for: ${username}`);
+
+  const user = await upsertUserFromTwitch(username);
+  if (!user) {
+    console.warn(`[Chat Part] Failed to upsert user: ${username}`);
+    return;
+  }
+
+  // Find open session for this user
+  const openSession = await prisma.viewSession.findFirst({
+    where: {
+      userId: user.id,
+      sessionEnd: null,
+    },
+  });
+
+  if (!openSession) {
+    console.log(`[Chat Part] User ${username} has no open session, skipping`);
+    return;
+  }
+
+  // End the session
+  const now = new Date();
+  await prisma.viewSession.update({
+    where: { id: openSession.id },
+    data: { sessionEnd: now },
+  });
+
+  console.log(`[Chat Part] Ended session for: ${username}`);
+}
+
+/**
  * Process viewer sessions based on the list of present chatters.
  * - Ends sessions for users no longer present
  * - Starts sessions for new users
@@ -15,9 +92,9 @@ export async function processViewerSessions(chatters: HelixChatChatter[]) {
   const userIdMap: Record<string, number> = {};
 
   for (const chatter of chatters) {
-    const user = await upsertUserFromTwitch(chatter.userId);
+    const user = await upsertUserFromTwitch(chatter.userName);
     if (!user) {
-      console.warn(`[EventSub] User not found or stale, unable to process message: ${chatter.userId}`);
+      console.warn(`[EventSub] User not found or stale, unable to process message: ${chatter.userName}`);
       return;
     }
     userIdMap[chatter.userId] = user.id;

@@ -1,13 +1,13 @@
 import prisma from "../prismaClient";
-import { getUserInfoById } from "../twitch/api/twitchApi";
-import { upsertTwitchProfile, getTwitchProfileIfFresh } from "./twitchProfile.service";
+import { getUserInfoByUsername } from "../twitch/api/twitchApi";
+import { upsertTwitchProfile } from "./twitchProfile.service";
 
 /**
  * Returns user if exists and updated within 1 day, otherwise null.
  */
-export async function getUserIfFresh(twitchId: string): Promise<any | null> {
+async function getUserIfFresh(login: string): Promise<any | null> {
   const user = await prisma.user.findUnique({
-    where: { twitchId },
+    where: { login },
     select: { id: true, login: true, displayName: true, updated: true },
   });
   if (!user) return null;
@@ -24,27 +24,20 @@ export async function getUserIfFresh(twitchId: string): Promise<any | null> {
  * Only updates if user is missing or last updated >1 day ago.
  * If displayName changes, adds a NameHistory record for the previous value.
  */
-export async function upsertUserFromTwitch(twitchId: string): Promise<any | null> {
-  let dbUser = await getUserIfFresh(twitchId);
-  if (dbUser) {
-    console.log(`[EventSub] Fresh user found: ${dbUser.id}`);
-    dbUser = await prisma.user.findUnique({ where: { twitchId: twitchId }, select: { id: true } });
-    return dbUser;
+export async function upsertUserFromTwitch(login: string): Promise<any | null> {
+  let existingUser = await getUserIfFresh(login);
+  if (existingUser) {
+    console.log(`[EventSub] Fresh user found: ${existingUser.displayName}`);
+    return existingUser;
   }
 
-  console.log(`[EventSub] User not found or stale, fetching from Twitch: ${twitchId}`);
-  const twitchUser = await getUserInfoById(twitchId);
+  console.log(`[EventSub] User not found or stale, fetching from Twitch: ${login}`);
+  const twitchUser = await getUserInfoByUsername(login);
 
   if (!twitchUser) {
-    console.warn(`[EventSub] Twitch user not found: ${twitchId}`);
+    console.warn(`[EventSub] Twitch user not found: ${login}`);
     return null;
   }
-
-  // Fetch user with all needed fields
-  const existingUser = await prisma.user.findUnique({
-    where: { twitchId: twitchUser.id },
-    select: { id: true, login: true, displayName: true, updated: true },
-  });
 
   const now = new Date();
   if (!existingUser) {
