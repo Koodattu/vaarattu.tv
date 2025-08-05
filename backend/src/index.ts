@@ -1,5 +1,4 @@
 import { tryCreateChatClient } from "./twitch/api/chat";
-import { registerChatHandlers } from "./twitch/api/chatHandlers";
 import { startEventSubWs } from "./twitch/api/eventsub";
 import { startTwitchAuthServer } from "./twitch/auth/dualAuthServer";
 import { getTokenPaths, getUserId } from "./twitch/auth/authProviders";
