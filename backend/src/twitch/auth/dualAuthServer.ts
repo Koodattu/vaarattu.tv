@@ -27,6 +27,8 @@ const scopes = {
     "moderator:read:chatters",
     "chat:read",
     "user:read:chat",
+    "moderation:read",
+    "channel:read:vips",
   ],
   bot: ["chat:read", "chat:edit"],
 };
@@ -61,10 +63,7 @@ export function startTwitchAuthServer(account: "streamer" | "bot") {
       if (!userInfo.user_id) {
         throw new Error("Could not fetch user id");
       }
-      fs.writeFileSync(
-        tokenDataPath,
-        JSON.stringify({ ...tokenData, id: userInfo.user_id, scope: scopes[account] }, null, 2)
-      );
+      fs.writeFileSync(tokenDataPath, JSON.stringify({ ...tokenData, id: userInfo.user_id, scope: scopes[account] }, null, 2));
       res.send(`Twitch ${account} tokens saved! You can now stop this server and restart the app.`);
       console.log(`Twitch ${account} tokens saved to`, tokenDataPath);
       setTimeout(() => process.exit(0), 2000);

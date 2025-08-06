@@ -18,7 +18,6 @@ CREATE TABLE "TwitchProfile" (
     "isSubscribed" BOOLEAN NOT NULL DEFAULT false,
     "subscriptionTier" TEXT,
     "subscriptionMonths" INTEGER NOT NULL DEFAULT 0,
-    "subscriptionStreak" INTEGER NOT NULL DEFAULT 0,
     "isModerator" BOOLEAN NOT NULL DEFAULT false,
     "isVip" BOOLEAN NOT NULL DEFAULT false,
     "lastUpdated" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -76,7 +75,7 @@ CREATE TABLE "Redemption" (
     "id" SERIAL NOT NULL,
     "twitchId" TEXT NOT NULL,
     "userId" INTEGER NOT NULL,
-    "rewardId" INTEGER NOT NULL,
+    "rewardId" TEXT NOT NULL,
     "timestamp" TIMESTAMP(3) NOT NULL,
     "customText" TEXT,
 
@@ -117,13 +116,24 @@ CREATE TABLE "Game" (
 );
 
 -- CreateTable
+CREATE TABLE "Emote" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "platform" TEXT NOT NULL,
+    "emoteId" TEXT NOT NULL,
+    "imageUrl" TEXT,
+    "isGlobal" BOOLEAN NOT NULL DEFAULT true,
+    "channelId" TEXT,
+
+    CONSTRAINT "Emote_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "EmoteUsage" (
     "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
-    "emote" TEXT NOT NULL,
-    "platform" TEXT NOT NULL,
-    "count" INTEGER NOT NULL,
-    "timestamp" TIMESTAMP(3) NOT NULL,
+    "emoteId" INTEGER NOT NULL,
+    "count" INTEGER NOT NULL DEFAULT 1,
 
     CONSTRAINT "EmoteUsage_pkey" PRIMARY KEY ("id")
 );
@@ -157,19 +167,6 @@ CREATE TABLE "ViewerProfile" (
 );
 
 -- CreateTable
-CREATE TABLE "Achievement" (
-    "id" SERIAL NOT NULL,
-    "userId" INTEGER NOT NULL,
-    "type" TEXT NOT NULL,
-    "title" TEXT NOT NULL,
-    "description" TEXT NOT NULL,
-    "earnedAt" TIMESTAMP(3) NOT NULL,
-    "iconUrl" TEXT,
-
-    CONSTRAINT "Achievement_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "NameHistory" (
     "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
@@ -177,17 +174,6 @@ CREATE TABLE "NameHistory" (
     "detectedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "NameHistory_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "SetupItem" (
-    "id" SERIAL NOT NULL,
-    "name" TEXT NOT NULL,
-    "description" TEXT,
-    "image" TEXT,
-    "modelUrl" TEXT,
-
-    CONSTRAINT "SetupItem_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -217,6 +203,15 @@ CREATE UNIQUE INDEX "Stream_twitchId_key" ON "Stream"("twitchId");
 -- CreateIndex
 CREATE UNIQUE INDEX "Game_twitchId_key" ON "Game"("twitchId");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "Emote_name_platform_key" ON "Emote"("name", "platform");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Emote_platform_emoteId_key" ON "Emote"("platform", "emoteId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "EmoteUsage_userId_emoteId_key" ON "EmoteUsage"("userId", "emoteId");
+
 -- AddForeignKey
 ALTER TABLE "TwitchProfile" ADD CONSTRAINT "TwitchProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -233,7 +228,7 @@ ALTER TABLE "Message" ADD CONSTRAINT "Message_userId_fkey" FOREIGN KEY ("userId"
 ALTER TABLE "Redemption" ADD CONSTRAINT "Redemption_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Redemption" ADD CONSTRAINT "Redemption_rewardId_fkey" FOREIGN KEY ("rewardId") REFERENCES "ChannelReward"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Redemption" ADD CONSTRAINT "Redemption_rewardId_fkey" FOREIGN KEY ("rewardId") REFERENCES "ChannelReward"("twitchId") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "StreamSegment" ADD CONSTRAINT "StreamSegment_streamId_fkey" FOREIGN KEY ("streamId") REFERENCES "Stream"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -245,13 +240,13 @@ ALTER TABLE "StreamSegment" ADD CONSTRAINT "StreamSegment_gameId_fkey" FOREIGN K
 ALTER TABLE "EmoteUsage" ADD CONSTRAINT "EmoteUsage_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "EmoteUsage" ADD CONSTRAINT "EmoteUsage_emoteId_fkey" FOREIGN KEY ("emoteId") REFERENCES "Emote"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "ViewSession" ADD CONSTRAINT "ViewSession_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ViewerProfile" ADD CONSTRAINT "ViewerProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Achievement" ADD CONSTRAINT "Achievement_userId_fkey" FOREIGN KEY ("userId") REFERENCES "ViewerProfile"("userId") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "NameHistory" ADD CONSTRAINT "NameHistory_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

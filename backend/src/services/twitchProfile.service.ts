@@ -1,7 +1,7 @@
 import prisma from "../prismaClient";
 import { HelixUser } from "@twurple/api";
 import { getUserId } from "../twitch/auth/authProviders";
-import { isUserVip, isUserModerator } from "../twitch/api/twitchApi";
+import { getUserInfoById, isUserVip, isUserModerator } from "../twitch/api/twitchApi";
 
 /**
  * Updates or creates a TwitchProfile for a user with fresh data from Twitch API
@@ -14,10 +14,11 @@ export async function upsertTwitchProfile(userId: number, twitchUser: HelixUser)
     const streamerId = getUserId("streamer");
 
     // Extract successful results
-    const followedChannel = await twitchUser.getChannelFollower(streamerId).catch(() => null);
-    const activeSubscription = await twitchUser.getSubscriber(streamerId).catch(() => null);
-    const isModerator = await isUserModerator(twitchUser.id, streamerId).catch(() => false);
-    const isVip = await isUserVip(twitchUser.id, streamerId).catch(() => false);
+    const broadcaster = await getUserInfoById(streamerId);
+    const followedChannel = await broadcaster?.getChannelFollower(twitchUser.id);
+    const activeSubscription = await broadcaster?.getSubscriber(twitchUser.id);
+    const isModerator = await isUserModerator(streamerId, twitchUser.id);
+    const isVip = await isUserVip(streamerId, twitchUser.id);
 
     // Prepare TwitchProfile data - use broadcaster subscription data if available for more details
     const twitchProfileData = {

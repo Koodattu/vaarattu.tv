@@ -37,7 +37,6 @@ model TwitchProfile {
   isSubscribed        Boolean   @default(false)
   subscriptionTier    String?   // "1000", "2000", "3000"
   subscriptionMonths  Int       @default(0)
-  subscriptionStreak  Int       @default(0)
 
   // Badges (many-to-many through junction table)
   userBadges          UserBadge[]
@@ -187,20 +186,6 @@ model ViewerProfile {
   favoriteGame       String?
   averageSessionTime Int       @default(0)  // minutes
   lastSeen          DateTime?
-
-  // Achievements
-  achievements       Achievement[]
-}
-
-model Achievement {
-  id           Int     @id @default(autoincrement())
-  userId       Int
-  viewerProfile ViewerProfile @relation(fields: [userId], references: [userId])
-  type         String  // "first_message", "loyal_viewer", etc.
-  title        String
-  description  String
-  earnedAt     DateTime
-  iconUrl      String?
 }
 
 model NameHistory {
@@ -209,12 +194,4 @@ model NameHistory {
   user         User     @relation(fields: [userId], references: [id])
   previousName String
   detectedAt   DateTime
-}
-
-model SetupItem {
-  id          Int      @id @default(autoincrement())
-  name        String
-  description String?
-  image       String?
-  modelUrl    String?
 }

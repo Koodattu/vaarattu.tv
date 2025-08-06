@@ -1,4 +1,4 @@
-import { ApiClient, HelixChatChatter, HelixCustomReward } from "@twurple/api";
+import { ApiClient, HelixChannelFollower, HelixChatChatter, HelixCustomReward, HelixSubscription, HelixUser } from "@twurple/api";
 import { getStreamerAuthProvider } from "../auth/authProviders";
 import dotenv from "dotenv";
 dotenv.config();
@@ -17,13 +17,13 @@ export async function getTwitchApiClientWithStreamer(): Promise<ApiClient> {
 }
 
 // Fetch user info by username (login)
-export async function getUserInfoByUsername(username: string) {
+export async function getUserInfoByUsername(username: string): Promise<HelixUser | null> {
   const api = await getTwitchApiClientWithStreamer();
   return await api.users.getUserByName(username);
 }
 
 // Fetch user info by user ID
-export async function getUserInfoById(userId: string) {
+export async function getUserInfoById(userId: string): Promise<HelixUser | null> {
   const api = await getTwitchApiClientWithStreamer();
   return await api.users.getUserById(userId);
 }
@@ -64,4 +64,18 @@ export async function isUserVip(broadcasterId: string, userId: string): Promise<
 export async function isUserModerator(broadcasterId: string, userId: string): Promise<boolean> {
   const api = await getTwitchApiClientWithStreamer();
   return await api.moderation.checkUserMod(broadcasterId, userId);
+}
+
+// Check if user is follower
+export async function isUserFollower(broadcasterId: string, userId: string): Promise<HelixChannelFollower | null | undefined> {
+  const api = await getTwitchApiClientWithStreamer();
+  const broadcaster = await api.users.getUserById(broadcasterId);
+  return await broadcaster?.getChannelFollower(userId);
+}
+
+// Check if user is subscriber
+export async function isUserSubscriber(broadcasterId: string, userId: string): Promise<HelixSubscription | null | undefined> {
+  const api = await getTwitchApiClientWithStreamer();
+  const broadcaster = await api.users.getUserById(broadcasterId);
+  return await broadcaster?.getSubscriber(userId);
 }
