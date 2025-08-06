@@ -12,10 +12,10 @@ import { upsertUserFromTwitch } from "./user.service";
  * @returns Updated TwitchProfile or null if update failed
  */
 export async function upsertTwitchProfile(userId: number, twitchUser: HelixUser): Promise<any | null> {
-  let existingUser = await getTwitchProfileIfFresh(userId);
-  if (existingUser) {
-    console.log(`[upsertTwitchProfile] Fresh user found: ${existingUser.displayName}`);
-    return existingUser;
+  let existingProfile = await getTwitchProfileIfFresh(userId);
+  if (existingProfile) {
+    console.log(`[upsertTwitchProfile] Fresh profile found for user ${twitchUser.displayName}`);
+    return existingProfile;
   }
 
   const streamerId = getUserId("streamer");
@@ -38,19 +38,13 @@ export async function upsertTwitchProfile(userId: number, twitchUser: HelixUser)
     lastUpdated: new Date(),
   };
 
-  // Upsert the TwitchProfile
-  const existingProfile = await prisma.twitchProfile.findUnique({
-    where: { userId },
-  });
-
-  let twitchProfile;
   if (existingProfile) {
-    twitchProfile = await prisma.twitchProfile.update({
+    existingProfile = await prisma.twitchProfile.update({
       where: { userId },
       data: twitchProfileData,
     });
   } else {
-    twitchProfile = await prisma.twitchProfile.create({
+    existingProfile = await prisma.twitchProfile.create({
       data: {
         userId,
         ...twitchProfileData,
@@ -60,7 +54,7 @@ export async function upsertTwitchProfile(userId: number, twitchUser: HelixUser)
 
   console.log(`[TwitchProfile] Updated profile for user ${twitchUser.displayName}`);
 
-  return twitchProfile;
+  return existingProfile;
 }
 
 /**
