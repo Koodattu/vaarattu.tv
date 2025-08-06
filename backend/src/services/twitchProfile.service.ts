@@ -2,6 +2,9 @@ import prisma from "../prismaClient";
 import { HelixUser } from "@twurple/api";
 import { getUserId } from "../twitch/auth/authProviders";
 import { getUserInfoById, isUserVip, isUserModerator } from "../twitch/api/twitchApi";
+import { EventSubChannelSubscriptionMessageEvent } from "@twurple/eventsub-base";
+import { upsertUserFromTwitch } from "./user.service";
+import { trackEmoteUsage } from "./emote.service";
 
 /**
  * Updates or creates a TwitchProfile for a user with fresh data from Twitch API
@@ -87,4 +90,36 @@ export async function getTwitchProfileIfFresh(userId: number, maxAgeHours: numbe
   }
 
   return null;
+}
+
+export async function processSubscriptionEvent(event: EventSubChannelSubscriptionMessageEvent) {
+  const user = await upsertUserFromTwitch(event.userName);
+  if (!user) {
+    console.warn(`[processSubscriptionEvent] User not found or stale, unable to process message: ${event.userName}`);
+    return;
+  }
+
+  try {
+    // Update TwitchProfile with subscription information
+    await prisma.twitchProfile.upsert({
+      where: { userId: user.id },
+      update: {
+        isSubscribed: true,
+        subscriptionTier: event.tier,
+        subscriptionMonths: event.cumulativeMonths,
+        lastUpdated: new Date(),
+      },
+      create: {
+        userId: user.id,
+        isSubscribed: true,
+        subscriptionTier: event.tier,
+        subscriptionMonths: event.cumulativeMonths,
+        lastUpdated: new Date(),
+      },
+    });
+
+    console.log(`[processSubscriptionEvent] Updated subscription for ${event.userName}: Tier ${event.tier}, ${event.cumulativeMonths} months`);
+  } catch (error) {
+    console.error(`[processSubscriptionEvent] Error updating subscription for ${event.userName}:`, error);
+  }
 }

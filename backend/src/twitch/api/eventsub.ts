@@ -4,6 +4,7 @@ import { getStreamerAuthProvider, getUserId } from "../auth/authProviders";
 import { processStreamOnlineEvent, processStreamOfflineEvent, processChannelUpdateEvent } from "../../services/stream.service";
 import { processChatMessageEvent } from "../../services/chatMessage.service";
 import { processChannelRedemptionEvent } from "../../services/channelRedemption.service";
+import { processSubscriptionEvent } from "../../services/twitchProfile.service";
 
 export async function startEventSubWs() {
   const authProvider = await getStreamerAuthProvider();
@@ -67,6 +68,15 @@ export async function startEventSubWs() {
 
   listener.onChannelSubscription(streamerChannel, (event) => {
     console.log("[EventSub] Subscription:", event);
+  });
+
+  listener.onChannelSubscriptionMessage(streamerChannel, async (event) => {
+    try {
+      console.log("[EventSub] Subscription Message:", event);
+      await processSubscriptionEvent(event);
+    } catch (err) {
+      console.error("[EventSub] Failed to process subscription message:", err);
+    }
   });
 
   listener.onChannelSubscriptionEnd(streamerChannel, (event) => {
