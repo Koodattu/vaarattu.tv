@@ -207,3 +207,5 @@ sketch
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,nextjs,node,react
 backend/tokens.bot.json
 backend/tokens.streamer.json
+backend-twitch/tokens.bot.json
+backend-twitch/tokens.streamer.json
