@@ -6,4 +6,4 @@ services:
     environment:
       - NODE_ENV=production
     network_mode: "host"
-    restart: unless-stopped
+    restart: "no"
