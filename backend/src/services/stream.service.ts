@@ -5,10 +5,15 @@ import type { EventSubChannelUpdateEvent } from "@twurple/eventsub-base";
 import { syncChannelPointRewards } from "./channelReward.service";
 import { streamState } from "./streamState.service";
 import { updateViewerAnalyticsForStream } from "./viewerProfileAnalytics.service";
+import { updateAvailableBadges } from "./twitchBadge.service";
+import { initializeEmotes } from "./emote.service";
 
 export async function processStreamOnlineEvent(event: EventSubStreamOnlineEvent) {
-  const result = await syncChannelPointRewards();
-  console.log(`[EventSub] Synced channel point rewards on stream start:`, result);
+  console.log(`[EventSub] Processing stream online event for ${event.broadcasterName}`);
+  await syncChannelPointRewards();
+  await updateAvailableBadges();
+  await initializeEmotes();
+  console.log(`[EventSub] Synced channel point rewards, badges, and emotes on stream start`);
 
   const stream = await event.getStream();
   if (!stream) {

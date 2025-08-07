@@ -1,10 +1,11 @@
 import { tryCreateChatClient } from "./twitch/api/chat";
 import { startEventSubWs } from "./twitch/api/eventsub";
 import { startTwitchAuthServer } from "./twitch/auth/dualAuthServer";
-import { getTokenPaths, getUserId } from "./twitch/auth/authProviders";
+import { getTokenPaths } from "./twitch/auth/authProviders";
 import { syncChannelPointRewards } from "./services/channelReward.service";
 import { updateAvailableBadges } from "./services/twitchBadge.service";
 import { initializeEmotes } from "./services/emote.service";
+import { testOpenAIConnection } from "./services/openai.service";
 import fs from "fs";
 import dotenv from "dotenv";
 import prisma from "./prismaClient";
@@ -34,11 +35,11 @@ async function start() {
   }
 
   try {
-    // Sync channel point rewards from Twitch to DB
+    // Test OpenAI connection
+    await testOpenAIConnection();
+
     await syncChannelPointRewards();
     await updateAvailableBadges();
-
-    // Initialize emote system
     await initializeEmotes();
 
     const chatClient = await tryCreateChatClient();

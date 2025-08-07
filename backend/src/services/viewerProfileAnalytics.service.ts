@@ -1,4 +1,5 @@
 import prisma from "../prismaClient";
+import { generateOrUpdateAISummary } from "./openai.service";
 
 /**
  * Update analytics for all users who participated in the given stream.
@@ -376,6 +377,7 @@ async function checkAndUpdateAISummary(userId: number): Promise<void> {
     select: {
       totalMessages: true,
       aiSummaryGeneratedAtMessages: true,
+      aiSummary: true,
       consent: true,
     },
   });
@@ -389,47 +391,73 @@ async function checkAndUpdateAISummary(userId: number): Promise<void> {
   if (messagesSinceLastSummary >= 100) {
     console.log(`[ViewerAnalytics] User ${userId} needs AI summary update (${messagesSinceLastSummary} new messages)`);
 
-    // TODO: Implement AI summary generation
-    // For now, just update the tracking field
-    await prisma.viewerProfile.update({
-      where: { userId },
-      data: {
-        aiSummaryGeneratedAtMessages: profile.totalMessages,
-        aiSummaryLastUpdate: new Date(),
-      },
-    });
+    // Generate new AI summary with only new messages
+    try {
+      const aiSummary = await generateAISummary(userId, profile.aiSummary, profile.aiSummaryGeneratedAtMessages);
 
-    console.log(`[ViewerAnalytics] AI summary generation queued for user ${userId}`);
+      await prisma.viewerProfile.update({
+        where: { userId },
+        data: {
+          aiSummary: aiSummary,
+          aiSummaryGeneratedAtMessages: profile.totalMessages,
+          aiSummaryLastUpdate: new Date(),
+        },
+      });
+
+      console.log(`[ViewerAnalytics] AI summary ${aiSummary ? "generated" : "generation failed"} for user ${userId}`);
+    } catch (error) {
+      console.error(`[ViewerAnalytics] Failed to generate AI summary for user ${userId}:`, error);
+
+      // Still update the tracking field to avoid constant retries
+      await prisma.viewerProfile.update({
+        where: { userId },
+        data: {
+          aiSummaryGeneratedAtMessages: profile.totalMessages,
+          aiSummaryLastUpdate: new Date(),
+        },
+      });
+    }
   }
 }
 
 /**
- * Generate AI summary for a user based on their messages
- * TODO: Implement actual AI integration
+ * Generate AI summary for a user based on their new messages since last generation
  */
-export async function generateAISummary(userId: number): Promise<string | null> {
-  // Get recent messages for the user
-  const messages = await prisma.message.findMany({
+export async function generateAISummary(userId: number, existingSummary: string | null = null, messagesGeneratedAt: number = 0): Promise<string | null> {
+  // Get user information for username
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { login: true },
+  });
+
+  if (!user) {
+    console.error(`[ViewerAnalytics] User ${userId} not found`);
+    return null;
+  }
+
+  // Calculate how many messages to skip (messages that were already used for AI generation)
+  const totalMessageCount = await prisma.message.count({
     where: { userId },
-    orderBy: { timestamp: "desc" },
-    take: 500, // Last 500 messages for context
+  });
+
+  // Get only new messages since last AI generation
+  const newMessages = await prisma.message.findMany({
+    where: { userId },
+    orderBy: { timestamp: "asc" },
+    skip: messagesGeneratedAt, // Skip messages that were already processed
     select: {
       content: true,
       timestamp: true,
     },
   });
 
-  if (messages.length === 0) {
-    return null;
+  if (newMessages.length === 0) {
+    console.log(`[ViewerAnalytics] No new messages for user ${userId} since last AI generation`);
+    return existingSummary;
   }
 
-  // TODO: Integrate with AI service (OpenAI, Claude, etc.)
-  // For now, return a placeholder
-  const messageCount = messages.length;
-  const firstMessage = messages[messages.length - 1];
-  const lastMessage = messages[0];
+  console.log(`[ViewerAnalytics] Processing ${newMessages.length} new messages for user ${user.login} (${totalMessageCount} total messages)`);
 
-  const placeholder = `A regular viewer who has sent ${messageCount} messages. First seen: ${firstMessage.timestamp.toDateString()}. Most recent activity: ${lastMessage.timestamp.toDateString()}. [AI summary will be generated here]`;
-
-  return placeholder;
+  // Use OpenAI to generate or update the summary
+  return await generateOrUpdateAISummary(user.login, existingSummary, newMessages);
 }
