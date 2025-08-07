@@ -155,14 +155,13 @@ CREATE TABLE "ViewSession" (
 CREATE TABLE "ViewerProfile" (
     "userId" INTEGER NOT NULL,
     "aiSummary" TEXT,
-    "lastUpdate" TIMESTAMP(3),
+    "aiSummaryLastUpdate" TIMESTAMP(3),
+    "aiSummaryGeneratedAtMessages" INTEGER NOT NULL DEFAULT 0,
     "consent" BOOLEAN NOT NULL DEFAULT true,
     "totalWatchTime" INTEGER NOT NULL DEFAULT 0,
     "totalMessages" INTEGER NOT NULL DEFAULT 0,
     "totalRedemptions" INTEGER NOT NULL DEFAULT 0,
     "totalPointsSpent" INTEGER NOT NULL DEFAULT 0,
-    "favoriteEmote" TEXT,
-    "favoriteGame" TEXT,
     "averageSessionTime" INTEGER NOT NULL DEFAULT 0,
     "lastSeen" TIMESTAMP(3),
 
@@ -177,6 +176,40 @@ CREATE TABLE "NameHistory" (
     "detectedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "NameHistory_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ViewerProfileTopEmote" (
+    "id" SERIAL NOT NULL,
+    "viewerProfileId" INTEGER NOT NULL,
+    "emoteId" INTEGER NOT NULL,
+    "usageCount" INTEGER NOT NULL DEFAULT 0,
+    "rank" INTEGER NOT NULL,
+
+    CONSTRAINT "ViewerProfileTopEmote_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ViewerProfileTopGame" (
+    "id" SERIAL NOT NULL,
+    "viewerProfileId" INTEGER NOT NULL,
+    "gameId" INTEGER NOT NULL,
+    "watchTime" INTEGER NOT NULL DEFAULT 0,
+    "rank" INTEGER NOT NULL,
+
+    CONSTRAINT "ViewerProfileTopGame_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ViewerProfileTopReward" (
+    "id" SERIAL NOT NULL,
+    "viewerProfileId" INTEGER NOT NULL,
+    "rewardId" INTEGER NOT NULL,
+    "redemptionCount" INTEGER NOT NULL DEFAULT 0,
+    "totalPointsSpent" INTEGER NOT NULL DEFAULT 0,
+    "rank" INTEGER NOT NULL,
+
+    CONSTRAINT "ViewerProfileTopReward_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -214,6 +247,24 @@ CREATE UNIQUE INDEX "Emote_platform_emoteId_key" ON "Emote"("platform", "emoteId
 
 -- CreateIndex
 CREATE UNIQUE INDEX "EmoteUsage_userId_emoteId_key" ON "EmoteUsage"("userId", "emoteId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ViewerProfileTopEmote_viewerProfileId_rank_key" ON "ViewerProfileTopEmote"("viewerProfileId", "rank");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ViewerProfileTopEmote_viewerProfileId_emoteId_key" ON "ViewerProfileTopEmote"("viewerProfileId", "emoteId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ViewerProfileTopGame_viewerProfileId_rank_key" ON "ViewerProfileTopGame"("viewerProfileId", "rank");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ViewerProfileTopGame_viewerProfileId_gameId_key" ON "ViewerProfileTopGame"("viewerProfileId", "gameId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ViewerProfileTopReward_viewerProfileId_rank_key" ON "ViewerProfileTopReward"("viewerProfileId", "rank");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ViewerProfileTopReward_viewerProfileId_rewardId_key" ON "ViewerProfileTopReward"("viewerProfileId", "rewardId");
 
 -- AddForeignKey
 ALTER TABLE "TwitchProfile" ADD CONSTRAINT "TwitchProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -262,3 +313,21 @@ ALTER TABLE "ViewerProfile" ADD CONSTRAINT "ViewerProfile_userId_fkey" FOREIGN K
 
 -- AddForeignKey
 ALTER TABLE "NameHistory" ADD CONSTRAINT "NameHistory_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ViewerProfileTopEmote" ADD CONSTRAINT "ViewerProfileTopEmote_viewerProfileId_fkey" FOREIGN KEY ("viewerProfileId") REFERENCES "ViewerProfile"("userId") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ViewerProfileTopEmote" ADD CONSTRAINT "ViewerProfileTopEmote_emoteId_fkey" FOREIGN KEY ("emoteId") REFERENCES "Emote"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ViewerProfileTopGame" ADD CONSTRAINT "ViewerProfileTopGame_viewerProfileId_fkey" FOREIGN KEY ("viewerProfileId") REFERENCES "ViewerProfile"("userId") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ViewerProfileTopGame" ADD CONSTRAINT "ViewerProfileTopGame_gameId_fkey" FOREIGN KEY ("gameId") REFERENCES "Game"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ViewerProfileTopReward" ADD CONSTRAINT "ViewerProfileTopReward_viewerProfileId_fkey" FOREIGN KEY ("viewerProfileId") REFERENCES "ViewerProfile"("userId") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ViewerProfileTopReward" ADD CONSTRAINT "ViewerProfileTopReward_rewardId_fkey" FOREIGN KEY ("rewardId") REFERENCES "ChannelReward"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

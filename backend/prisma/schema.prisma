@@ -92,6 +92,9 @@ model ChannelReward {
   imageUrl  String?
   backgroundColor String?
   redemptions Redemption[]
+
+  // Relations to viewer profile top rewards
+  topRewardProfiles ViewerProfileTopReward[]
 }
 
 model Redemption {
@@ -139,6 +142,9 @@ model Game {
   name      String
   boxArtUrl String?
   segments  StreamSegment[]
+
+  // Relations to viewer profile top games
+  topGameProfiles ViewerProfileTopGame[]
 }
 
 model Emote {
@@ -154,7 +160,8 @@ model Emote {
   @@unique([platform, emoteId])
 
   // Relations
-  emoteUsages EmoteUsage[]
+  emoteUsages     EmoteUsage[]
+  topEmoteProfiles ViewerProfileTopEmote[]
 }
 
 model EmoteUsage {
@@ -183,20 +190,24 @@ model ViewerProfile {
   userId       Int       @id
   user         User      @relation(fields: [userId], references: [id])
 
-  // AI-generated content
-  aiSummary    String?
-  lastUpdate   DateTime?
-  consent      Boolean   @default(true)
+  // AI-generated content and tracking
+  aiSummary                String?
+  aiSummaryLastUpdate      DateTime?
+  aiSummaryGeneratedAtMessages Int    @default(0)  // Track message count when AI summary was last generated
+  consent                  Boolean   @default(true)
 
-  // Structured analytics (replace Json with proper fields)
+  // Structured analytics (calculated periodically)
   totalWatchTime     Int       @default(0)  // minutes
   totalMessages      Int       @default(0)
   totalRedemptions   Int       @default(0)
   totalPointsSpent   Int       @default(0)
-  favoriteEmote      String?
-  favoriteGame       String?
   averageSessionTime Int       @default(0)  // minutes
   lastSeen          DateTime?
+
+  // Top favorites (many-to-many relations)
+  topEmotes         ViewerProfileTopEmote[]
+  topGames          ViewerProfileTopGame[]
+  topRewards        ViewerProfileTopReward[]
 }
 
 model NameHistory {
@@ -205,4 +216,45 @@ model NameHistory {
   user         User     @relation(fields: [userId], references: [id])
   previousName String
   detectedAt   DateTime
+}
+
+// Junction tables for ViewerProfile top favorites
+model ViewerProfileTopEmote {
+  id              Int           @id @default(autoincrement())
+  viewerProfileId Int
+  viewerProfile   ViewerProfile @relation(fields: [viewerProfileId], references: [userId])
+  emoteId         Int
+  emote           Emote         @relation(fields: [emoteId], references: [id])
+  usageCount      Int           @default(0)
+  rank            Int           // 1, 2, or 3 for top 3
+
+  @@unique([viewerProfileId, rank])
+  @@unique([viewerProfileId, emoteId])
+}
+
+model ViewerProfileTopGame {
+  id              Int           @id @default(autoincrement())
+  viewerProfileId Int
+  viewerProfile   ViewerProfile @relation(fields: [viewerProfileId], references: [userId])
+  gameId          Int
+  game            Game          @relation(fields: [gameId], references: [id])
+  watchTime       Int           @default(0)  // minutes watched for this game
+  rank            Int           // 1, 2, or 3 for top 3
+
+  @@unique([viewerProfileId, rank])
+  @@unique([viewerProfileId, gameId])
+}
+
+model ViewerProfileTopReward {
+  id              Int           @id @default(autoincrement())
+  viewerProfileId Int
+  viewerProfile   ViewerProfile @relation(fields: [viewerProfileId], references: [userId])
+  rewardId        Int
+  reward          ChannelReward @relation(fields: [rewardId], references: [id])
+  redemptionCount Int           @default(0)  // number of times redeemed
+  totalPointsSpent Int          @default(0)  // total points spent on this reward
+  rank            Int           // 1, 2, or 3 for top 3
+
+  @@unique([viewerProfileId, rank])
+  @@unique([viewerProfileId, rewardId])
 }

@@ -4,6 +4,7 @@ import type { EventSubStreamOnlineEvent } from "@twurple/eventsub-base";
 import type { EventSubChannelUpdateEvent } from "@twurple/eventsub-base";
 import { syncChannelPointRewards } from "./channelReward.service";
 import { streamState } from "./streamState.service";
+import { updateViewerAnalyticsForStream } from "./viewerProfileAnalytics.service";
 
 export async function processStreamOnlineEvent(event: EventSubStreamOnlineEvent) {
   const result = await syncChannelPointRewards();
@@ -63,6 +64,9 @@ async function findOrCreateGame(game: { id: string; name: string; boxArtUrl?: st
 export async function processStreamOfflineEvent(event: EventSubStreamOfflineEvent) {
   const endTime = new Date();
 
+  // Get the current stream ID before ending it
+  const currentStreamId = streamState.getCurrentStreamId();
+
   // End stream tracking first
   await streamState.endStream();
 
@@ -87,10 +91,20 @@ export async function processStreamOfflineEvent(event: EventSubStreamOfflineEven
     where: { id: latest.id },
     data: { endTime },
   });
-  console.log(`[EventSub] Stream and last segment ended in DB, stream tracking stopped.`, { streamId: latest.id, endTime });
-}
 
-// Called when the channel updates (game/category/title change)
+  console.log(`[EventSub] Stream and last segment ended in DB, stream tracking stopped.`, { streamId: latest.id, endTime });
+
+  // Update viewer analytics for all users who participated in this stream
+  if (currentStreamId) {
+    console.log(`[EventSub] Starting viewer analytics update for stream ${currentStreamId}`);
+    try {
+      await updateViewerAnalyticsForStream(currentStreamId);
+      console.log(`[EventSub] Completed viewer analytics update for stream ${currentStreamId}`);
+    } catch (error) {
+      console.error(`[EventSub] Failed to update viewer analytics for stream ${currentStreamId}:`, error);
+    }
+  }
+} // Called when the channel updates (game/category/title change)
 export async function processChannelUpdateEvent(event: EventSubChannelUpdateEvent) {
   // Find the latest stream (not ended)
   const latest = await prisma.stream.findFirst({
