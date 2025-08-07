@@ -16,7 +16,7 @@ export async function startEventSubWs() {
   listener.onStreamOnline(streamerChannel, async (event) => {
     try {
       console.log("[EventSub] Stream online event received!");
-      await processStreamOnlineEvent(event, streamerChannel);
+      await processStreamOnlineEvent(event);
     } catch (err) {
       console.error("[EventSub] Failed to process stream online event:", err);
     }

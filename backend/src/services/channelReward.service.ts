@@ -1,8 +1,10 @@
 import prisma from "../prismaClient";
 import { getChannelPointRewards } from "../twitch/api/twitchApi";
 import type { ChannelReward } from "@prisma/client";
+import { getUserId } from "../twitch/auth/authProviders";
 
-export async function syncChannelPointRewards(broadcasterId: string) {
+export async function syncChannelPointRewards() {
+  const broadcasterId = getUserId("streamer");
   const twitchRewards = await getChannelPointRewards(broadcasterId);
   const dbRewards: ChannelReward[] = await prisma.channelReward.findMany();
   const dbRewardMap = new Map<string, ChannelReward>(dbRewards.map((r) => [r.twitchId, r]));

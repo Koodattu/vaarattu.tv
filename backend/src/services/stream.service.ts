@@ -5,8 +5,8 @@ import type { EventSubChannelUpdateEvent } from "@twurple/eventsub-base";
 import { syncChannelPointRewards } from "./channelReward.service";
 import { streamState } from "./streamState.service";
 
-export async function processStreamOnlineEvent(event: EventSubStreamOnlineEvent, streamerChannel: string) {
-  const result = await syncChannelPointRewards(streamerChannel);
+export async function processStreamOnlineEvent(event: EventSubStreamOnlineEvent) {
+  const result = await syncChannelPointRewards();
   console.log(`[EventSub] Synced channel point rewards on stream start:`, result);
 
   const stream = await event.getStream();

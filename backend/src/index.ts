@@ -5,7 +5,6 @@ import { getTokenPaths, getUserId } from "./twitch/auth/authProviders";
 import { syncChannelPointRewards } from "./services/channelReward.service";
 import { updateAvailableBadges } from "./services/twitchBadge.service";
 import { initializeEmotes } from "./services/emote.service";
-import { streamState } from "./services/streamState.service";
 import fs from "fs";
 import dotenv from "dotenv";
 import prisma from "./prismaClient";
@@ -36,19 +35,8 @@ async function start() {
 
   try {
     // Sync channel point rewards from Twitch to DB
-    const broadcasterId = getUserId("streamer");
-    const newRewards = await syncChannelPointRewards(broadcasterId);
-    if (newRewards.added > 0 || newRewards.updated > 0) {
-      console.log(`Added ${newRewards.added} and updated ${newRewards.updated} channel point rewards to DB.`);
-    } else {
-      console.log("Channel point rewards are up to date.");
-    }
-    const newBadges = await updateAvailableBadges();
-    if (newBadges.global > 0 || newBadges.channel > 0) {
-      console.log(`Updated ${newBadges.global} global and ${newBadges.channel} channel badges in the database.`);
-    } else {
-      console.log("Badges are up to date.");
-    }
+    await syncChannelPointRewards();
+    await updateAvailableBadges();
 
     // Initialize emote system
     await initializeEmotes();
