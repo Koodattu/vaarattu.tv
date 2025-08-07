@@ -77,6 +77,8 @@ model Message {
   twitchId  String   @unique
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
+  streamId  Int
+  stream    Stream   @relation(fields: [streamId], references: [id])
   content   String
   timestamp DateTime @default(now())
 }
@@ -97,6 +99,8 @@ model Redemption {
   twitchId  String   @unique
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
+  streamId  Int
+  stream    Stream   @relation(fields: [streamId], references: [id])
   rewardId  String
   channelReward ChannelReward @relation(fields: [rewardId], references: [twitchId])
   timestamp DateTime
@@ -111,6 +115,11 @@ model Stream {
   endTime      DateTime?
   thumbnailUrl String?
   segments     StreamSegment[]
+
+  // Relations to stream-specific data
+  messages     Message[]
+  redemptions  Redemption[]
+  viewSessions ViewSession[]
 }
 
 model StreamSegment {
@@ -164,6 +173,8 @@ model ViewSession {
   id           Int      @id @default(autoincrement())
   userId       Int
   user         User     @relation(fields: [userId], references: [id])
+  streamId     Int
+  stream       Stream   @relation(fields: [streamId], references: [id])
   sessionStart DateTime
   sessionEnd   DateTime?
 }

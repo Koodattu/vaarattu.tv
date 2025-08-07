@@ -1,8 +1,16 @@
 import prisma from "../prismaClient";
 import { upsertUserFromTwitch } from "./user.service";
 import { EventSubChannelRedemptionAddEvent } from "@twurple/eventsub-base";
+import { streamState } from "./streamState.service";
 
 export async function processChannelRedemptionEvent(event: EventSubChannelRedemptionAddEvent) {
+  // Only process redemptions during active streams
+  const streamId = streamState.getCurrentStreamId();
+  if (!streamId) {
+    console.log(`[Redemption] Ignoring redemption from ${event.userName} - no active stream`);
+    return;
+  }
+
   const user = await upsertUserFromTwitch(event.userName);
   if (!user) {
     console.warn(`[EventSub] User not found or stale, unable to process message: ${event.userName}`);
@@ -30,9 +38,12 @@ export async function processChannelRedemptionEvent(event: EventSubChannelRedemp
     data: {
       twitchId: event.id,
       userId: user.id,
+      streamId: streamId,
       rewardId: event.rewardId,
       timestamp: event.redemptionDate,
       customText: event.input || undefined,
     },
   });
+
+  console.log(`[Redemption] Processed redemption from ${event.userName} for stream ${streamId}`);
 }

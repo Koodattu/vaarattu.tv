@@ -3,6 +3,7 @@ import type { EventSubStreamOfflineEvent } from "@twurple/eventsub-base";
 import type { EventSubStreamOnlineEvent } from "@twurple/eventsub-base";
 import type { EventSubChannelUpdateEvent } from "@twurple/eventsub-base";
 import { syncChannelPointRewards } from "./channelReward.service";
+import { streamState } from "./streamState.service";
 
 export async function processStreamOnlineEvent(event: EventSubStreamOnlineEvent, streamerChannel: string) {
   const result = await syncChannelPointRewards(streamerChannel);
@@ -36,7 +37,11 @@ export async function processStreamOnlineEvent(event: EventSubStreamOnlineEvent,
     },
     include: { segments: true },
   });
-  console.log(`[EventSub] Stream and initial segment tracked in DB.`);
+
+  // Start tracking this stream in the stream state manager
+  await streamState.startStream(dbStream.id);
+
+  console.log(`[EventSub] Stream and initial segment tracked in DB, stream tracking started.`);
   return dbStream;
 }
 
@@ -57,6 +62,10 @@ async function findOrCreateGame(game: { id: string; name: string; boxArtUrl?: st
 
 export async function processStreamOfflineEvent(event: EventSubStreamOfflineEvent) {
   const endTime = new Date();
+
+  // End stream tracking first
+  await streamState.endStream();
+
   // Find latest open stream with segments
   const latest = await prisma.stream.findFirst({
     where: { endTime: null },
@@ -78,7 +87,7 @@ export async function processStreamOfflineEvent(event: EventSubStreamOfflineEven
     where: { id: latest.id },
     data: { endTime },
   });
-  console.log(`[EventSub] Stream and last segment ended in DB.`, { streamId: latest.id, endTime });
+  console.log(`[EventSub] Stream and last segment ended in DB, stream tracking stopped.`, { streamId: latest.id, endTime });
 }
 
 // Called when the channel updates (game/category/title change)

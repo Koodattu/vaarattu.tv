@@ -3,9 +3,9 @@ import { startEventSubWs } from "./twitch/api/eventsub";
 import { startTwitchAuthServer } from "./twitch/auth/dualAuthServer";
 import { getTokenPaths, getUserId } from "./twitch/auth/authProviders";
 import { syncChannelPointRewards } from "./services/channelReward.service";
-import { startChatPollingService } from "./twitch/api/chatPollingService";
 import { updateAvailableBadges } from "./services/twitchBadge.service";
 import { initializeEmotes } from "./services/emote.service";
+import { streamState } from "./services/streamState.service";
 import fs from "fs";
 import dotenv from "dotenv";
 import prisma from "./prismaClient";
@@ -58,7 +58,9 @@ async function start() {
     console.log("Twitch chat client connected and listening.");
     registerChatHandlers(chatClient);
     await startEventSubWs();
-    startChatPollingService();
+
+    // Note: Chatter polling is now managed by the stream state manager
+    console.log("All Twitch services initialized successfully.");
   } catch (err) {
     if (err instanceof Error) {
       console.error("Failed to start Twitch services:", err.message);

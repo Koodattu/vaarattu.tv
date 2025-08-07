@@ -51,6 +51,7 @@ CREATE TABLE "Message" (
     "id" SERIAL NOT NULL,
     "twitchId" TEXT NOT NULL,
     "userId" INTEGER NOT NULL,
+    "streamId" INTEGER NOT NULL,
     "content" TEXT NOT NULL,
     "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -75,6 +76,7 @@ CREATE TABLE "Redemption" (
     "id" SERIAL NOT NULL,
     "twitchId" TEXT NOT NULL,
     "userId" INTEGER NOT NULL,
+    "streamId" INTEGER NOT NULL,
     "rewardId" TEXT NOT NULL,
     "timestamp" TIMESTAMP(3) NOT NULL,
     "customText" TEXT,
@@ -142,6 +144,7 @@ CREATE TABLE "EmoteUsage" (
 CREATE TABLE "ViewSession" (
     "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
+    "streamId" INTEGER NOT NULL,
     "sessionStart" TIMESTAMP(3) NOT NULL,
     "sessionEnd" TIMESTAMP(3),
 
@@ -225,7 +228,13 @@ ALTER TABLE "UserBadge" ADD CONSTRAINT "UserBadge_badgeId_fkey" FOREIGN KEY ("ba
 ALTER TABLE "Message" ADD CONSTRAINT "Message_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Message" ADD CONSTRAINT "Message_streamId_fkey" FOREIGN KEY ("streamId") REFERENCES "Stream"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Redemption" ADD CONSTRAINT "Redemption_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Redemption" ADD CONSTRAINT "Redemption_streamId_fkey" FOREIGN KEY ("streamId") REFERENCES "Stream"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Redemption" ADD CONSTRAINT "Redemption_rewardId_fkey" FOREIGN KEY ("rewardId") REFERENCES "ChannelReward"("twitchId") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -244,6 +253,9 @@ ALTER TABLE "EmoteUsage" ADD CONSTRAINT "EmoteUsage_emoteId_fkey" FOREIGN KEY ("
 
 -- AddForeignKey
 ALTER TABLE "ViewSession" ADD CONSTRAINT "ViewSession_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ViewSession" ADD CONSTRAINT "ViewSession_streamId_fkey" FOREIGN KEY ("streamId") REFERENCES "Stream"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ViewerProfile" ADD CONSTRAINT "ViewerProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
