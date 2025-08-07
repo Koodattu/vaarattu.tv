@@ -249,23 +249,23 @@ async function updateTopGames(userId: number): Promise<void> {
   // Calculate watch time per game through stream segments and view sessions
   const gameWatchTime = await prisma.$queryRaw<Array<{ gameId: number; watchTimeMinutes: bigint }>>`
     SELECT
-      ss.game_id as "gameId",
+      ss."gameId" as "gameId",
       SUM(
         EXTRACT(EPOCH FROM (
           LEAST(
-            COALESCE(vs.session_end, NOW()),
-            COALESCE(ss.end_time, NOW())
-          ) - GREATEST(vs.session_start, ss.start_time)
+            COALESCE(vs."sessionEnd", NOW()),
+            COALESCE(ss."endTime", NOW())
+          ) - GREATEST(vs."sessionStart", ss."startTime")
         )) / 60
       )::INTEGER as "watchTimeMinutes"
-    FROM view_sessions vs
-    JOIN streams s ON vs.stream_id = s.id
-    JOIN stream_segments ss ON s.id = ss.stream_id
-    WHERE vs.user_id = ${userId}
-      AND vs.session_end IS NOT NULL
-      AND vs.session_start < COALESCE(ss.end_time, NOW())
-      AND COALESCE(vs.session_end, NOW()) > ss.start_time
-    GROUP BY ss.game_id
+    FROM "ViewSession" vs
+    JOIN "Stream" s ON vs."streamId" = s.id
+    JOIN "StreamSegment" ss ON s.id = ss."streamId"
+    WHERE vs."userId" = ${userId}
+      AND vs."sessionEnd" IS NOT NULL
+      AND vs."sessionStart" < COALESCE(ss."endTime", NOW())
+      AND COALESCE(vs."sessionEnd", NOW()) > ss."startTime"
+    GROUP BY ss."gameId"
     ORDER BY "watchTimeMinutes" DESC
     LIMIT 3
   `;
