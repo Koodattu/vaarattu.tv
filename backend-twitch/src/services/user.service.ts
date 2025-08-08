@@ -3,20 +3,22 @@ import { getUserInfoByUsername } from "../twitch/api/twitchApi";
 import { upsertTwitchProfile } from "./twitchProfile.service";
 
 /**
- * Returns user if exists and updated within 1 day, otherwise null.
+ * Returns user if exists and is fresh (updated within 1 day),
+ * or user with isFresh=false if exists but stale,
+ * or null if doesn't exist at all.
  */
-async function getUserIfFresh(login: string): Promise<any | null> {
+async function getUserIfFresh(login: string): Promise<{ user: any; isFresh: boolean } | null> {
   const user = await prisma.user.findUnique({
     where: { login },
-    select: { id: true, login: true, displayName: true, updated: true },
+    select: { id: true, twitchId: true, login: true, displayName: true, updated: true },
   });
   if (!user) return null;
+
   const now = Date.now();
   const updated = user.updated instanceof Date ? user.updated.getTime() : new Date(user.updated).getTime();
-  if (now - updated < 24 * 60 * 60 * 1000) {
-    return user;
-  }
-  return null;
+  const isFresh = now - updated < 24 * 60 * 60 * 1000;
+
+  return { user, isFresh };
 }
 
 /**
@@ -25,10 +27,11 @@ async function getUserIfFresh(login: string): Promise<any | null> {
  * If displayName changes, adds a NameHistory record for the previous value.
  */
 export async function upsertUserFromTwitch(login: string): Promise<any | null> {
-  let existingUser = await getUserIfFresh(login);
-  if (existingUser) {
-    console.log(`[EventSub] Fresh user found: ${existingUser.displayName}`);
-    return existingUser;
+  const userResult = await getUserIfFresh(login);
+
+  if (userResult && userResult.isFresh) {
+    console.log(`[EventSub] Fresh user found: ${userResult.user.displayName}`);
+    return userResult.user;
   }
 
   console.log(`[EventSub] User not found or stale, fetching from Twitch: ${login}`);
@@ -40,8 +43,9 @@ export async function upsertUserFromTwitch(login: string): Promise<any | null> {
   }
 
   const now = new Date();
-  if (!existingUser) {
-    // Create new user
+
+  if (!userResult) {
+    // User doesn't exist, create new user
     const newUser = await prisma.user.create({
       data: { twitchId: twitchUser.id, login: twitchUser.name, displayName: twitchUser.displayName, avatar: twitchUser.profilePictureUrl, updated: now },
     });
@@ -52,11 +56,8 @@ export async function upsertUserFromTwitch(login: string): Promise<any | null> {
     return newUser;
   }
 
-  const updated = existingUser.updated instanceof Date ? existingUser.updated.getTime() : new Date(existingUser.updated).getTime();
-  if (Date.now() - updated < 24 * 60 * 60 * 1000) {
-    // User is fresh, return minimal user object (id only)
-    return { id: existingUser.id };
-  }
+  // User exists but is stale, update it
+  const existingUser = userResult.user;
 
   // Collect name history changes
   const nameHistoryEntries = [];
@@ -80,7 +81,7 @@ export async function upsertUserFromTwitch(login: string): Promise<any | null> {
 
   // Update user and return updated object
   const updatedUser = await prisma.user.update({
-    where: { twitchId: twitchUser.id },
+    where: { twitchId: existingUser.twitchId },
     data: { login: twitchUser.name, displayName: twitchUser.displayName, avatar: twitchUser.profilePictureUrl, updated: now },
   });
 

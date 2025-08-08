@@ -12,10 +12,10 @@ import { upsertUserFromTwitch } from "./user.service";
  * @returns Updated TwitchProfile or null if update failed
  */
 export async function upsertTwitchProfile(userId: number, twitchUser: HelixUser): Promise<any | null> {
-  let existingProfile = await getTwitchProfileIfFresh(userId);
-  if (existingProfile) {
+  const profileResult = await getTwitchProfileIfFresh(userId);
+  if (profileResult && profileResult.isFresh) {
     console.log(`[upsertTwitchProfile] Fresh profile found for user ${twitchUser.displayName}`);
-    return existingProfile;
+    return profileResult.profile;
   }
 
   const streamerId = getUserId("streamer");
@@ -38,13 +38,16 @@ export async function upsertTwitchProfile(userId: number, twitchUser: HelixUser)
     lastUpdated: new Date(),
   };
 
-  if (existingProfile) {
-    existingProfile = await prisma.twitchProfile.update({
+  let updatedProfile;
+  if (profileResult) {
+    // Profile exists but is stale, update it
+    updatedProfile = await prisma.twitchProfile.update({
       where: { userId },
       data: twitchProfileData,
     });
   } else {
-    existingProfile = await prisma.twitchProfile.create({
+    // Profile doesn't exist, create it
+    updatedProfile = await prisma.twitchProfile.create({
       data: {
         userId,
         ...twitchProfileData,
@@ -54,14 +57,15 @@ export async function upsertTwitchProfile(userId: number, twitchUser: HelixUser)
 
   console.log(`[TwitchProfile] Updated profile for user ${twitchUser.displayName}`);
 
-  return existingProfile;
+  return updatedProfile;
 }
 
 /**
- * Returns TwitchProfile if exists and updated within specified time, otherwise null
- * @param userId Database user ID
+ * Returns TwitchProfile if exists and is fresh (updated within 1 day),
+ * or profile with isFresh=false if exists but stale,
+ * or null if doesn't exist at all.
  */
-async function getTwitchProfileIfFresh(userId: number): Promise<any | null> {
+async function getTwitchProfileIfFresh(userId: number): Promise<{ profile: any; isFresh: boolean } | null> {
   const profile = await prisma.twitchProfile.findUnique({
     where: { userId },
   });
@@ -70,11 +74,9 @@ async function getTwitchProfileIfFresh(userId: number): Promise<any | null> {
 
   const now = Date.now();
   const updated = profile.lastUpdated instanceof Date ? profile.lastUpdated.getTime() : new Date(profile.lastUpdated).getTime();
+  const isFresh = now - updated < 24 * 60 * 60 * 1000;
 
-  if (now - updated < 24 * 60 * 60 * 1000) {
-    return profile;
-  }
-  return null;
+  return { profile, isFresh };
 }
 
 export async function processSubscriptionEvent(event: EventSubChannelSubscriptionMessageEvent) {
