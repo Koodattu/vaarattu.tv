@@ -80,7 +80,7 @@ export async function generateOrUpdateAISummary(
           content: userPrompt,
         },
       ],
-      max_tokens: 500, // Keep summaries concise
+      max_tokens: 1000, // Keep summaries concise
       temperature: 0.8, // Add some creativity
     });
 
