@@ -209,3 +209,5 @@ backend/tokens.bot.json
 backend/tokens.streamer.json
 backend-twitch/tokens.bot.json
 backend-twitch/tokens.streamer.json
+backend/twitch/tokens.bot.json
+backend/twitch/tokens.streamer.json

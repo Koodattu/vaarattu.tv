@@ -1,3 +1,7 @@
+import dotenv from "dotenv";
+const envPath = process.env.NODE_ENV === "production" ? ".env" : "../.env";
+dotenv.config({ path: envPath, quiet: true });
+
 import { tryCreateChatClient } from "./twitch/api/chat";
 import { startEventSubWs } from "./twitch/api/eventsub";
 import { startTwitchAuthServer } from "./twitch/auth/dualAuthServer";
@@ -7,10 +11,8 @@ import { updateAvailableBadges } from "./services/twitchBadge.service";
 import { initializeEmotes } from "./services/emote.service";
 import { testOpenAIConnection } from "./services/openai.service";
 import fs from "fs";
-import dotenv from "dotenv";
 import prisma from "./prismaClient";
 import { registerChatHandlers } from "./twitch/api/chatHandlers";
-dotenv.config({ quiet: true });
 
 async function start() {
   // Check DB connection before anything else

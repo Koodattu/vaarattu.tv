@@ -2,7 +2,7 @@ import TwitchEmoticons from "@mkody/twitch-emoticons";
 import prisma from "../prismaClient";
 import { getUserId, getStreamerAuthProvider } from "../twitch/auth/authProviders";
 import { ApiClient } from "@twurple/api";
-import { Emote } from "@prisma/client";
+import { Emote } from "@vaarattu/shared";
 
 const { EmoteFetcher } = TwitchEmoticons;
 

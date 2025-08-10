@@ -1,11 +1,14 @@
 {
-  "name": "backend",
+  "name": "@vaarattu/backend-twitch",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "nodemon --watch src --exec ts-node src/index.ts",
+    "db:generate": "cd ../shared && npm run db:generate",
+    "db:push": "cd ../shared && npm run db:push",
+    "db:migrate": "cd ../shared && npm run db:migrate",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -14,7 +17,7 @@
   "description": "",
   "dependencies": {
     "@mkody/twitch-emoticons": "^2.9.3",
-    "@prisma/client": "^6.12.0",
+    "@vaarattu/shared": "file:../shared",
     "@twurple/api": "^7.3.0",
     "@twurple/api-call": "^7.3.0",
     "@twurple/auth": "^7.3.0",
@@ -32,7 +35,6 @@
     "@types/express": "^5.0.3",
     "@types/node": "^24.0.14",
     "nodemon": "^3.1.10",
-    "prisma": "^6.12.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }

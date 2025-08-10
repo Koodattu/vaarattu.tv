@@ -1,6 +1,6 @@
+import { ChannelReward } from "@vaarattu/shared";
 import prisma from "../prismaClient";
 import { getChannelPointRewards } from "../twitch/api/twitchApi";
-import type { ChannelReward } from "@prisma/client";
 import { getUserId } from "../twitch/auth/authProviders";
 
 export async function syncChannelPointRewards() {

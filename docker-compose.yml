@@ -1,9 +1,29 @@
 services:
   backend-twitch:
-    build: ./backend-twitch
+    build:
+      context: ./backend
+      dockerfile: ./twitch/Dockerfile
     ports:
       - "4000:4000"
     environment:
       - NODE_ENV=production
-    network_mode: "host"
-    restart: "no"
+    volumes:
+      - ./backend/.env:/app/twitch/.env:ro
+      - ./backend/twitch/tokens.bot.json:/app/twitch/tokens.bot.json
+      - ./backend/twitch/tokens.streamer.json:/app/twitch/tokens.streamer.json
+    restart: unless-stopped
+
+  backend-web:
+    build:
+      context: ./backend
+      dockerfile: ./web/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./backend/.env:/app/web/.env:ro
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

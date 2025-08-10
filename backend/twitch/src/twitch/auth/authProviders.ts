@@ -1,8 +1,6 @@
 import { RefreshingAuthProvider, type AccessToken } from "@twurple/auth";
 import fs from "fs";
 import path from "path";
-import dotenv from "dotenv";
-dotenv.config();
 
 const clientId = process.env.TWITCH_CLIENT_ID!;
 const clientSecret = process.env.TWITCH_CLIENT_SECRET!;

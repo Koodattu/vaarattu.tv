@@ -1,0 +1,21 @@
+{
+  "name": "@vaarattu/shared",
+  "version": "1.0.0",
+  "description": "Shared database schema and types for vaarattu.tv",
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {
+    "build": "tsc",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.12.0"
+  },
+  "devDependencies": {
+    "prisma": "^6.12.0",
+    "typescript": "^5.8.3"
+  }
+}
