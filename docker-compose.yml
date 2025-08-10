@@ -12,6 +12,7 @@ services:
       - ./backend/twitch/tokens.bot.json:/app/tokens.bot.json
       - ./backend/twitch/tokens.streamer.json:/app/tokens.streamer.json
     restart: unless-stopped
+    network_mode: "host"
 
   backend-web:
     build:
@@ -24,6 +25,7 @@ services:
     volumes:
       - ./backend/.env:/app/.env:ro
     restart: unless-stopped
+    network_mode: "host"
 
 volumes:
   postgres_data:
