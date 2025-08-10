@@ -23,5 +23,8 @@ RUN npm install ../shared
 COPY web/src/ ./src/
 RUN npm run build
 
+# Set working directory back to /app for runtime
+WORKDIR /app
+
 EXPOSE 3001
-CMD ["npm", "start"]
+CMD ["node", "web/dist/index.js"]

@@ -8,9 +8,9 @@ services:
     environment:
       - NODE_ENV=production
     volumes:
-      - ./backend/.env:/app/twitch/.env:ro
-      - ./backend/twitch/tokens.bot.json:/app/twitch/tokens.bot.json
-      - ./backend/twitch/tokens.streamer.json:/app/twitch/tokens.streamer.json
+      - ./backend/.env:/app/.env:ro
+      - ./backend/twitch/tokens.bot.json:/app/tokens.bot.json
+      - ./backend/twitch/tokens.streamer.json:/app/tokens.streamer.json
     restart: unless-stopped
 
   backend-web:
@@ -22,7 +22,7 @@ services:
     environment:
       - NODE_ENV=production
     volumes:
-      - ./backend/.env:/app/web/.env:ro
+      - ./backend/.env:/app/.env:ro
     restart: unless-stopped
 
 volumes:

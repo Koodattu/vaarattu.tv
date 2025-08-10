@@ -24,5 +24,8 @@ COPY twitch/src/ ./src/
 COPY twitch/tokens.*.json ./
 RUN npm run build
 
+# Set working directory back to /app for runtime
+WORKDIR /app
+
 EXPOSE 4000
-CMD ["npm", "start"]
+CMD ["node", "twitch/dist/index.js"]
