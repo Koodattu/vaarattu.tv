@@ -1,11 +1,14 @@
 import { ApiResponse, StreamListItem, StreamTimeline } from "@/types/api";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+// Use NEXT_PUBLIC_API_BASE_URL if set, else default to empty string (relative path)
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 class ApiClient {
   private async fetchApi<T>(endpoint: string): Promise<ApiResponse<T>> {
     try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`);
+      // Always use relative path if API_BASE_URL is empty (prod behind nginx)
+      const url = API_BASE_URL ? `${API_BASE_URL}${endpoint}` : endpoint;
+      const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
