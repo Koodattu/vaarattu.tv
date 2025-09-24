@@ -6,12 +6,27 @@ import { upsertTwitchProfile } from "./twitchProfile.service";
  * Returns user if exists and is fresh (updated within 1 day),
  * or user with isFresh=false if exists but stale,
  * or null if doesn't exist at all.
+ * First tries to find by login, then by twitchId (for username changes).
  */
 async function getUserIfFresh(login: string): Promise<{ user: any; isFresh: boolean } | null> {
-  const user = await prisma.user.findUnique({
+  // First try to find by current login
+  let user = await prisma.user.findUnique({
     where: { login },
     select: { id: true, twitchId: true, login: true, displayName: true, updated: true },
   });
+
+  // If not found by login, user might have changed username
+  // Try to get their twitchId from Twitch API and look up by that
+  if (!user) {
+    const twitchUser = await getUserInfoByUsername(login);
+    if (twitchUser) {
+      user = await prisma.user.findUnique({
+        where: { twitchId: twitchUser.id },
+        select: { id: true, twitchId: true, login: true, displayName: true, updated: true },
+      });
+    }
+  }
+
   if (!user) return null;
 
   const now = Date.now();
@@ -30,7 +45,12 @@ export async function upsertUserFromTwitch(login: string): Promise<any | null> {
   const userResult = await getUserIfFresh(login);
 
   if (userResult && userResult.isFresh) {
-    console.log(`[EventSub] Fresh user found: ${userResult.user.displayName}`);
+    // Check if this was found by twitchId (username change) vs login
+    if (userResult.user.login !== login) {
+      console.log(`[EventSub] Fresh user found with username change: ${userResult.user.login} → ${login}`);
+    } else {
+      console.log(`[EventSub] Fresh user found: ${userResult.user.displayName}`);
+    }
     return userResult.user;
   }
 
@@ -46,6 +66,7 @@ export async function upsertUserFromTwitch(login: string): Promise<any | null> {
 
   if (!userResult) {
     // User doesn't exist, create new user
+    console.log(`[EventSub] Creating new user: ${twitchUser.name} (${twitchUser.displayName})`);
     const newUser = await prisma.user.create({
       data: { twitchId: twitchUser.id, login: twitchUser.name, displayName: twitchUser.displayName, avatar: twitchUser.profilePictureUrl, updated: now },
     });
@@ -58,6 +79,14 @@ export async function upsertUserFromTwitch(login: string): Promise<any | null> {
 
   // User exists but is stale, update it
   const existingUser = userResult.user;
+
+  // Check if this is a username change
+  const isUsernameChange = existingUser.login !== twitchUser.name;
+  if (isUsernameChange) {
+    console.log(`[EventSub] Username change detected: ${existingUser.login} → ${twitchUser.name}`);
+  } else {
+    console.log(`[EventSub] Updating stale user: ${existingUser.login}`);
+  }
 
   // Collect name history changes
   const nameHistoryEntries = [];
