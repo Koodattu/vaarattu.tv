@@ -1,4 +1,4 @@
-import { ApiClient, HelixChannelFollower, HelixChatChatter, HelixCustomReward, HelixSubscription, HelixUser } from "@twurple/api";
+import { ApiClient, HelixChannelFollower, HelixChatChatter, HelixCustomReward, HelixStream, HelixSubscription, HelixUser } from "@twurple/api";
 import { getStreamerAuthProvider } from "../auth/authProviders";
 
 // Returns an ApiClient using the streamer user token
@@ -69,4 +69,11 @@ export async function isUserSubscriber(broadcasterId: string, userId: string): P
   const api = await getTwitchApiClientWithStreamer();
   const broadcaster = await api.users.getUserById(broadcasterId);
   return await broadcaster?.getSubscriber(userId);
+}
+
+// Get current stream status for a broadcaster
+export async function getStreamByUserId(userId: string): Promise<HelixStream | null> {
+  const api = await getTwitchApiClientWithStreamer();
+  const streams = await api.streams.getStreams({ userId: [userId] });
+  return streams.data.length > 0 ? streams.data[0] : null;
 }

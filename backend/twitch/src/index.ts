@@ -10,6 +10,7 @@ import { syncChannelPointRewards } from "./services/channelReward.service";
 import { updateAvailableBadges } from "./services/twitchBadge.service";
 import { initializeEmotes } from "./services/emote.service";
 import { testOpenAIConnection } from "./services/openai.service";
+import { startStreamStatusPolling } from "./twitch/api/streamPolling.service";
 import fs from "fs";
 import prisma from "./prismaClient";
 import { registerChatHandlers } from "./twitch/api/chatHandlers";
@@ -49,6 +50,9 @@ async function start() {
     console.log("Twitch chat client connected and listening.");
     registerChatHandlers(chatClient);
     await startEventSubWs();
+
+    // Start periodic stream status polling to catch missed events
+    startStreamStatusPolling();
 
     // Note: Chatter polling is now managed by the stream state manager
     console.log("All Twitch services initialized successfully.");
