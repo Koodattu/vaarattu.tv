@@ -16,26 +16,26 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@mkody/twitch-emoticons": "^2.9.3",
+    "@mkody/twitch-emoticons": "^2.9.5",
     "@vaarattu/shared": "file:../shared",
-    "@twurple/api": "^7.3.0",
-    "@twurple/api-call": "^7.3.0",
-    "@twurple/auth": "^7.3.0",
-    "@twurple/chat": "^7.3.0",
-    "@twurple/common": "^7.3.0",
-    "@twurple/eventsub-ws": "^7.3.0",
+    "@twurple/api": "^8.0.2",
+    "@twurple/api-call": "^8.0.2",
+    "@twurple/auth": "^8.0.2",
+    "@twurple/chat": "^8.0.2",
+    "@twurple/common": "^8.0.2",
+    "@twurple/eventsub-ws": "^8.0.2",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.1",
-    "express": "^5.1.0",
-    "openai": "^5.12.0"
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "openai": "^6.10.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
-    "@types/dotenv": "^6.1.1",
-    "@types/express": "^5.0.3",
-    "@types/node": "^24.0.14",
-    "nodemon": "^3.1.10",
+    "@types/dotenv": "^8.2.3",
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.10.1",
+    "nodemon": "^3.1.11",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.3"
   }
 }
