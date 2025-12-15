@@ -89,28 +89,51 @@ async function syncEmotesToDatabase(): Promise<void> {
 
   // Bulk upsert emotes to database
   const existingEmotes = await prisma.emote.findMany();
-  const existingEmoteMap = new Map(existingEmotes.map((e) => [`${e.name}_${e.platform}`, e]));
+
+  // Create maps for both unique constraints
+  const existingByNamePlatform = new Map(existingEmotes.map((e) => [`${e.name}_${e.platform}`, e]));
+  const existingByPlatformEmoteId = new Map(existingEmotes.map((e) => [`${e.platform}_${e.emoteId}`, e]));
 
   const toCreate: any[] = [];
   const toUpdate: { id: number; data: any }[] = [];
+  const toDelete: number[] = []; // IDs to delete due to conflicts
 
   for (const emoteData of emotesToSync) {
-    const key = `${emoteData.name}_${emoteData.platform}`;
-    const existing = existingEmoteMap.get(key);
+    const nameKey = `${emoteData.name}_${emoteData.platform}`;
+    const emoteIdKey = `${emoteData.platform}_${emoteData.emoteId}`;
+    const existingByName = existingByNamePlatform.get(nameKey);
+    const existingByEmoteId = existingByPlatformEmoteId.get(emoteIdKey);
 
-    if (!existing) {
-      toCreate.push(emoteData);
+    if (!existingByName) {
+      // New emote by name+platform
+      // But check if platform+emoteId already exists with different name
+      if (existingByEmoteId && existingByEmoteId.name !== emoteData.name) {
+        // Conflict: same platform+emoteId but different name
+        // Mark the old one for deletion and create new
+        toDelete.push(existingByEmoteId.id);
+        toCreate.push(emoteData);
+      } else if (!existingByEmoteId) {
+        toCreate.push(emoteData);
+      }
+      // If existingByEmoteId has same name, it's the same emote, skip
     } else {
-      // Check if update is needed
+      // Emote exists by name+platform, check if update is needed
       const needsUpdate =
-        existing.emoteId !== emoteData.emoteId ||
-        existing.imageUrl !== emoteData.imageUrl ||
-        existing.isGlobal !== emoteData.isGlobal ||
-        existing.channelId !== emoteData.channelId;
+        existingByName.emoteId !== emoteData.emoteId ||
+        existingByName.imageUrl !== emoteData.imageUrl ||
+        existingByName.isGlobal !== emoteData.isGlobal ||
+        existingByName.channelId !== emoteData.channelId;
 
       if (needsUpdate) {
+        // Check if the new emoteId would conflict with another record
+        if (existingByEmoteId && existingByEmoteId.id !== existingByName.id) {
+          // The new emoteId is already used by a different emote record
+          // Delete the conflicting record first
+          toDelete.push(existingByEmoteId.id);
+        }
+
         toUpdate.push({
-          id: existing.id,
+          id: existingByName.id,
           data: {
             emoteId: emoteData.emoteId,
             imageUrl: emoteData.imageUrl,
@@ -125,6 +148,17 @@ async function syncEmotesToDatabase(): Promise<void> {
   // Execute database operations
   let added = 0;
   let updated = 0;
+  let deleted = 0;
+
+  // Delete conflicting records first (before creates and updates)
+  const uniqueToDelete = [...new Set(toDelete)];
+  if (uniqueToDelete.length > 0) {
+    await prisma.emote.deleteMany({
+      where: { id: { in: uniqueToDelete } },
+    });
+    deleted = uniqueToDelete.length;
+    console.log(`[Emote] Deleted ${deleted} conflicting emote records`);
+  }
 
   if (toCreate.length > 0) {
     await prisma.emote.createMany({
@@ -134,22 +168,26 @@ async function syncEmotesToDatabase(): Promise<void> {
     added = toCreate.length;
   }
 
-  if (toUpdate.length > 0) {
+  // Filter out updates for records that were deleted
+  const deleteSet = new Set(uniqueToDelete);
+  const validUpdates = toUpdate.filter((item) => !deleteSet.has(item.id));
+
+  if (validUpdates.length > 0) {
     await prisma.$transaction(
-      toUpdate.map((item) =>
+      validUpdates.map((item) =>
         prisma.emote.update({
           where: { id: item.id },
           data: item.data,
         })
       )
     );
-    updated = toUpdate.length;
+    updated = validUpdates.length;
   }
 
   // Rebuild cache with fresh data
   await rebuildEmoteCache();
 
-  console.log(`[Emote] Synced emotes: +${added} new, ~${updated} updated`);
+  console.log(`[Emote] Synced emotes: +${added} new, ~${updated} updated, -${deleted} deleted`);
 }
 
 /**
