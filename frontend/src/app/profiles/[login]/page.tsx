@@ -157,14 +157,6 @@ export default function ProfilePage() {
             )}
           </div>
 
-          {/* Quick stats grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            <StatBadge icon="💬" label="Messages" value={profile.totalMessages.toLocaleString()} />
-            <StatBadge icon="⏱️" label="Watch Time" value={formatDuration(profile.totalWatchTime)} />
-            <StatBadge icon="🎁" label="Redemptions" value={profile.totalRedemptions.toLocaleString()} />
-            <StatBadge icon="💎" label="Points Spent" value={profile.totalPointsSpent.toLocaleString()} />
-          </div>
-
           {/* Top items sections */}
           <div className="grid md:grid-cols-3 gap-4">
             {/* Top Emotes */}
@@ -270,8 +262,32 @@ export default function ProfilePage() {
                       }
                     />
                   )}
-                  {profile.topGames[0] && <InfoRow label="Fav Game" value={profile.topGames[0].name} />}
-                  {profile.topRewards[0] && <InfoRow label="Fav Reward" value={profile.topRewards[0].title} />}
+                  {profile.topGames[0] && (
+                    <InfoRow
+                      label="Fav Game"
+                      value={
+                        <span className="flex items-center gap-2">
+                          {profile.topGames[0].boxArtUrl && (
+                            <Image src={profile.topGames[0].boxArtUrl} alt={profile.topGames[0].name} width={20} height={20} className="inline rounded object-contain" />
+                          )}
+                          {profile.topGames[0].name}
+                        </span>
+                      }
+                    />
+                  )}
+                  {profile.topRewards[0] && (
+                    <InfoRow
+                      label="Fav Reward"
+                      value={
+                        <span className="flex items-center gap-2">
+                          {profile.topRewards[0].imageUrl && (
+                            <Image src={profile.topRewards[0].imageUrl} alt={profile.topRewards[0].title} width={20} height={20} className="inline rounded object-contain" />
+                          )}
+                          {profile.topRewards[0].title}
+                        </span>
+                      }
+                    />
+                  )}
                 </tbody>
               </table>
             </div>
