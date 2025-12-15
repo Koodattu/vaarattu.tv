@@ -123,7 +123,6 @@ function WatchtimeLeaderboardContent() {
                       {user.avatar && <Image src={user.avatar} alt={user.displayName} width={48} height={48} className="rounded-full" />}
                       <div className="flex-1 min-w-0">
                         <div className="text-white font-medium text-lg">{user.displayName}</div>
-                        <div className="text-gray-500 text-sm">@{user.login}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-white font-bold text-xl">{formatDuration(user.totalWatchTime)}</div>

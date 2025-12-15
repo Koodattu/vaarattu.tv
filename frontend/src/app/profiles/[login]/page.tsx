@@ -124,7 +124,6 @@ export default function ProfilePage() {
               )}
               <div>
                 <h1 className="text-2xl font-bold text-white">{profile.displayName}</h1>
-                <p className="text-gray-500">@{profile.login}</p>
                 {roles.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {roles.map((role) => (
@@ -139,8 +138,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Title for desktop */}
-          <h1 className="hidden lg:block text-3xl font-bold text-white mb-2">{profile.displayName}</h1>
-          <p className="hidden lg:block text-gray-500 mb-6">@{profile.login}</p>
+          <h1 className="hidden lg:block text-3xl font-bold text-white mb-6">{profile.displayName}</h1>
 
           {/* AI Summary */}
           <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-6">
@@ -244,7 +242,6 @@ export default function ProfilePage() {
             <div className="p-4">
               <table className="w-full text-sm">
                 <tbody>
-                  <InfoRow label="Username" value={`@${profile.login}`} />
                   <InfoRow label="Total Messages" value={profile.totalMessages.toLocaleString()} />
                   <InfoRow label="Watch Time" value={formatDuration(profile.totalWatchTime)} />
                   <InfoRow label="Avg Session" value={profile.averageSessionTime > 0 ? formatDuration(profile.averageSessionTime) : null} />

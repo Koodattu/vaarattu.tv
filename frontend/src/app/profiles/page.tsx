@@ -32,7 +32,6 @@ function UserCard({ user }: { user: UserListItem }) {
               {user.isFollowing && <span title="Follower">❤️</span>}
             </span>
           </div>
-          <div className="text-gray-500 text-xs truncate">@{user.login}</div>
         </div>
       </div>
 
