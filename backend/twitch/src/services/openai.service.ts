@@ -16,6 +16,8 @@ SÄÄNNÖT:
 - Älä selitä tai kommentoi tehtävää
 - Jos viestejä on vähän, tee lyhyt profiili
 - Jos viestejä on paljon, voit tehdä pidemmän mutta pidä silti kohtuullisena
+- Älä kirjoita vain käyttäjän viestejä uudelleen, ellei hän toista jotain tiettyjä asiaa usein
+- Tärkeintä on kirjoittaa teksti pohjautuen käyttäjän viestien sisältöön ja tyyliin
 
 FOKUS:
 - Käyttäjän chat-käyttäytyminen ja tyylit
@@ -24,7 +26,7 @@ FOKUS:
 - Suhtautuminen peleihin, streamiin, muihin katsojiin
 
 OHJE:
-Jos saat olemassa olevan profiilin, päivitä sitä uusien viestien perusteella säilyttäen hyvät osat.
+Jos saat olemassa olevan profiilin, päivitä sitä uusien viestien perusteella säilyttäen aikaisemmasta hyvät osat.
 Jos ei ole olemassa olevaa profiilia, luo uusi kokonaan.
 Lopputuloksen tulee olla yhtenäinen, päivitetty Wikipedia-artikkeli käyttäjästä.`;
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -33,7 +33,7 @@ function formatNumber(num: number): string {
   return num.toLocaleString();
 }
 
-export default function EmotesLeaderboardPage() {
+function EmotesLeaderboardContent() {
   const searchParams = useSearchParams();
   const initialTimeRange = (searchParams.get("timeRange") as TimeRange) || "all";
 
@@ -200,5 +200,24 @@ export default function EmotesLeaderboardPage() {
         </>
       )}
     </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+        <span className="ml-3 text-gray-400">Loading...</span>
+      </div>
+    </div>
+  );
+}
+
+export default function EmotesLeaderboardPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <EmotesLeaderboardContent />
+    </Suspense>
   );
 }
