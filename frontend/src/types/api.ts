@@ -155,3 +155,52 @@ export interface LeaderboardSummary {
   topEmotes: LeaderboardEmote[];
   topRewards: LeaderboardReward[];
 }
+
+// User types
+export interface UserListItem {
+  id: number;
+  twitchId: string;
+  login: string;
+  displayName: string;
+  avatar: string | null;
+  totalMessages: number;
+  totalWatchTime: number;
+  lastSeen: string | null;
+  isFollowing?: boolean;
+  isSubscribed?: boolean;
+  isModerator?: boolean;
+  isVip?: boolean;
+}
+
+export interface UserProfile extends UserListItem {
+  aiSummary: string | null;
+  aiSummaryLastUpdate: string | null;
+  totalRedemptions: number;
+  totalPointsSpent: number;
+  averageSessionTime: number;
+  topEmotes: Array<{
+    name: string;
+    platform: string;
+    imageUrl: string | null;
+    usageCount: number;
+    rank: number;
+  }>;
+  topGames: Array<{
+    name: string;
+    boxArtUrl: string | null;
+    watchTime: number;
+    rank: number;
+  }>;
+  topRewards: Array<{
+    title: string;
+    cost: number;
+    imageUrl: string | null;
+    redemptionCount: number;
+    totalPointsSpent: number;
+    rank: number;
+  }>;
+  nameHistory: Array<{
+    previousName: string;
+    detectedAt: string;
+  }>;
+}

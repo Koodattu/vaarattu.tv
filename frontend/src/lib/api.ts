@@ -10,6 +10,8 @@ import {
   LeaderboardGame,
   RewardUserLeaderboard,
   TimeRange,
+  UserListItem,
+  UserProfile,
 } from "@/types/api";
 
 // Use NEXT_PUBLIC_API_BASE_URL if set, else default to empty string (relative path)
@@ -87,6 +89,21 @@ class ApiClient {
 
   async getTopGames(timeRange: TimeRange = "all", page: number = 1, limit: number = 20): Promise<ApiResponse<LeaderboardGame[]>> {
     return this.fetchApi<LeaderboardGame[]>(`/api/leaderboards/games?page=${page}&limit=${limit}&timeRange=${timeRange}`);
+  }
+
+  // User/Profile endpoints
+  async getUsers(page: number = 1, limit: number = 25, search?: string): Promise<ApiResponse<UserListItem[]>> {
+    let url = `/api/users?page=${page}&limit=${limit}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    return this.fetchApi<UserListItem[]>(url);
+  }
+
+  async getUserProfile(userId: number): Promise<ApiResponse<UserProfile>> {
+    return this.fetchApi<UserProfile>(`/api/users/${userId}`);
+  }
+
+  async getUserProfileByLogin(login: string): Promise<ApiResponse<UserProfile>> {
+    return this.fetchApi<UserProfile>(`/api/users/login/${encodeURIComponent(login)}`);
   }
 }
 
