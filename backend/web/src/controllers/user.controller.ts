@@ -6,6 +6,17 @@ import { parsePaginationQuery, createPaginationInfo } from "../utils/pagination"
 const userService = new UserService();
 
 export class UserController {
+  async getRandomUsers(req: Request, res: Response<ApiResponse>) {
+    const limit = Math.min(parseInt(req.query.limit as string) || 18, 50);
+
+    const users = await userService.getRandomUsers(limit);
+
+    res.json({
+      success: true,
+      data: users,
+    });
+  }
+
   async getUsers(req: Request, res: Response<ApiResponse>) {
     const { page, limit } = parsePaginationQuery(req.query);
     const search = req.query.search as string | undefined;

@@ -3,6 +3,63 @@ import { UserListItem, UserProfile } from "../types/api.types";
 import { calculateOffset } from "../utils/pagination";
 
 export class UserService {
+  async getRandomUsers(limit: number): Promise<UserListItem[]> {
+    // Get random users using raw SQL for true randomness (min 100 messages)
+    const randomUsers = await prisma.$queryRaw<{ id: number }[]>`
+      SELECT id FROM "User"
+      WHERE id IN (SELECT "userId" FROM "ViewerProfile" WHERE "totalMessages" >= 100)
+      ORDER BY RANDOM()
+      LIMIT ${limit}
+    `;
+
+    const userIds = randomUsers.map((u) => u.id);
+
+    if (userIds.length === 0) {
+      return [];
+    }
+
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: {
+        id: true,
+        twitchId: true,
+        login: true,
+        displayName: true,
+        avatar: true,
+        viewerProfile: {
+          select: {
+            totalMessages: true,
+            totalWatchTime: true,
+            lastSeen: true,
+          },
+        },
+        twitchProfile: {
+          select: {
+            isFollowing: true,
+            isSubscribed: true,
+            isModerator: true,
+            isVip: true,
+          },
+        },
+      },
+    });
+
+    return users.map((user) => ({
+      id: user.id,
+      twitchId: user.twitchId,
+      login: user.login,
+      displayName: user.displayName,
+      avatar: user.avatar,
+      totalMessages: user.viewerProfile?.totalMessages || 0,
+      totalWatchTime: user.viewerProfile?.totalWatchTime || 0,
+      lastSeen: user.viewerProfile?.lastSeen || null,
+      isFollowing: user.twitchProfile?.isFollowing,
+      isSubscribed: user.twitchProfile?.isSubscribed,
+      isModerator: user.twitchProfile?.isModerator,
+      isVip: user.twitchProfile?.isVip,
+    }));
+  }
+
   async getUsers(page: number, limit: number, search?: string): Promise<{ users: UserListItem[]; total: number }> {
     const offset = calculateOffset(page, limit);
 

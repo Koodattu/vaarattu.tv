@@ -10,50 +10,35 @@ import { formatDuration, formatRelativeTime } from "@/lib/utils";
 function UserCard({ user }: { user: UserListItem }) {
   return (
     <Link href={`/profiles/${user.login}`} className="bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-purple-500 transition-all hover:bg-gray-750 block">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         {/* Avatar */}
-        <div className="relative flex-shrink-0">
+        <div className="flex-shrink-0">
           {user.avatar ? (
-            <Image src={user.avatar} alt={user.displayName} width={56} height={56} className="rounded-full" />
+            <Image src={user.avatar} alt={user.displayName} width={48} height={48} className="rounded-full" />
           ) : (
-            <div className="w-14 h-14 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 text-xl">👤</div>
+            <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 text-lg">👤</div>
           )}
-          {/* Status badges */}
-          <div className="absolute -bottom-1 -right-1 flex gap-0.5">
-            {user.isModerator && (
-              <span title="Moderator" className="text-xs">
-                ⚔️
-              </span>
-            )}
-            {user.isVip && (
-              <span title="VIP" className="text-xs">
-                💎
-              </span>
-            )}
-            {user.isSubscribed && (
-              <span title="Subscriber" className="text-xs">
-                ⭐
-              </span>
-            )}
-          </div>
         </div>
 
         {/* User info */}
         <div className="flex-1 min-w-0">
-          <div className="text-white font-medium truncate">{user.displayName}</div>
-          <div className="text-gray-500 text-sm truncate">@{user.login}</div>
-        </div>
-
-        {/* Stats */}
-        <div className="text-right text-sm hidden sm:block">
-          <div className="text-gray-400">{user.totalMessages.toLocaleString()} msgs</div>
-          <div className="text-gray-500">{formatDuration(user.totalWatchTime)}</div>
+          <div className="flex items-center gap-1">
+            <span className="text-white font-medium truncate">{user.displayName}</span>
+            {/* Role badges */}
+            <span className="flex gap-0.5 flex-shrink-0">
+              {user.isModerator && <span title="Moderator">⚔️</span>}
+              {user.isVip && <span title="VIP">💎</span>}
+              {user.isSubscribed && <span title="Subscriber">⭐</span>}
+              {user.isFollowing && <span title="Follower">❤️</span>}
+            </span>
+          </div>
+          <div className="text-gray-500 text-xs truncate">@{user.login}</div>
         </div>
       </div>
 
-      {/* Mobile stats row */}
-      <div className="flex justify-between mt-3 pt-3 border-t border-gray-700 text-sm sm:hidden">
-        <span className="text-gray-400">{user.totalMessages.toLocaleString()} messages</span>
+      {/* Stats row */}
+      <div className="flex justify-between mt-3 pt-3 border-t border-gray-700 text-sm">
+        <span className="text-gray-400">{user.totalMessages.toLocaleString()} msgs</span>
         <span className="text-gray-500">{formatDuration(user.totalWatchTime)}</span>
       </div>
 
@@ -71,9 +56,27 @@ export default function ProfilesPage() {
   const [hasMore, setHasMore] = useState(true);
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchMode, setIsSearchMode] = useState(false);
   const pageSize = 25;
 
-  const fetchUsers = useCallback(async () => {
+  // Fetch random users for initial display
+  const fetchRandomUsers = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    const response = await apiClient.getRandomUsers(18);
+
+    if (response.success && response.data) {
+      setUsers(response.data);
+    } else {
+      setError(response.error || "Failed to load profiles");
+    }
+
+    setLoading(false);
+  }, []);
+
+  // Fetch users with search/pagination
+  const fetchSearchUsers = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -90,13 +93,18 @@ export default function ProfilesPage() {
   }, [page, searchQuery]);
 
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    if (isSearchMode) {
+      fetchSearchUsers();
+    } else {
+      fetchRandomUsers();
+    }
+  }, [isSearchMode, fetchRandomUsers, fetchSearchUsers]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchInput.length >= 3 || searchInput.length === 0) {
+    if (searchInput.length >= 3) {
       setSearchQuery(searchInput);
+      setIsSearchMode(true);
       setPage(1);
     }
   };
@@ -110,6 +118,7 @@ export default function ProfilesPage() {
   const clearSearch = () => {
     setSearchInput("");
     setSearchQuery("");
+    setIsSearchMode(false);
     setPage(1);
   };
 
@@ -118,7 +127,7 @@ export default function ProfilesPage() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-2">Viewer Profiles</h1>
-        <p className="text-gray-400">Browse viewer profiles and stats</p>
+        <p className="text-gray-400">{isSearchMode ? "Search results" : "Random selection of viewers — refresh for more!"}</p>
       </div>
 
       {/* Search */}
@@ -133,7 +142,7 @@ export default function ProfilesPage() {
               placeholder="Search users (min 3 characters, press Enter)"
               className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
             />
-            {searchQuery && (
+            {isSearchMode && (
               <button type="button" onClick={clearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors">
                 ✕
               </button>
@@ -177,15 +186,15 @@ export default function ProfilesPage() {
               <p className="text-gray-400">{searchQuery ? "Try a different search term" : "No viewer profiles available yet"}</p>
             </div>
           ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
               {users.map((user) => (
                 <UserCard key={user.id} user={user} />
               ))}
             </div>
           )}
 
-          {/* Pagination */}
-          {users.length > 0 && (
+          {/* Pagination - only in search mode */}
+          {isSearchMode && users.length > 0 && (
             <div className="flex justify-center gap-4 mt-8">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}

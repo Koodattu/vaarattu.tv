@@ -92,6 +92,10 @@ class ApiClient {
   }
 
   // User/Profile endpoints
+  async getRandomUsers(limit: number = 18): Promise<ApiResponse<UserListItem[]>> {
+    return this.fetchApi<UserListItem[]>(`/api/users/random?limit=${limit}`);
+  }
+
   async getUsers(page: number = 1, limit: number = 25, search?: string): Promise<ApiResponse<UserListItem[]>> {
     let url = `/api/users?page=${page}&limit=${limit}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;

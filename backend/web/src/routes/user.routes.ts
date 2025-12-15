@@ -5,6 +5,10 @@ import { asyncHandler } from "../middleware/errorHandler";
 const router = Router();
 const userController = new UserController();
 
+// GET /api/users/random - Get random users
+// Query params: limit (max 50, default 18)
+router.get("/random", asyncHandler(userController.getRandomUsers.bind(userController)));
+
 // GET /api/users - List all users with basic info
 // Query params: page, limit, search
 router.get("/", asyncHandler(userController.getUsers.bind(userController)));
