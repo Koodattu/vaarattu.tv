@@ -31,18 +31,22 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Teasers Section */}
+      {/* Clips Section */}
       <section className="bg-gray-900 py-8">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-2 gap-6">
-            <LeaderboardTeaser />
-            <ClipsTeaser />
-          </div>
+          <ClipsTeaser />
+        </div>
+      </section>
+
+      {/* Leaderboards Section */}
+      <section className="bg-gray-950 py-8">
+        <div className="container mx-auto px-4">
+          <LeaderboardTeaser />
         </div>
       </section>
 
       {/* Featured Viewers Section */}
-      <section className="bg-gray-950 py-8">
+      <section className="bg-gray-900 py-8">
         <div className="container mx-auto px-4">
           <FeaturedViewers />
         </div>
