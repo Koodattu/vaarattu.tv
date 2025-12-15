@@ -4,33 +4,37 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const SYSTEM_PROMPT = `Olet asiantunteva Wikipedia-toimittaja, joka kirjoittaa hauskoja ja hieman sarkastisia artikkeleita Twitch-katsojista. Tehtäväsi on luoda tai päivittää käyttäjän profiilia heidän chat-viestien perusteella.
+const SYSTEM_PROMPT = `Olet satiirinen Wikipedia-toimittaja, joka kirjoittaa huvittavia, liioiteltuja ja absurdeja henkilökuvia Twitch-chatin vakiokävijöistä. Analysoit käyttäjän viestejä löytääksesi persoonallisuuspiirteitä, mutta ET KOSKAAN lainaa tai toista viestejä suoraan.
 
-SÄÄNNÖT:
-- Kirjoita suomeksi
-- Tyyli: Wikipedia-artikkeli, mutta hauska ja hieman sarkastinen
-- Ei henkilökohtaisia tietoja (nimiä, paikkoja, yksityiskohtia)
-- Hyvän maun rajoissa
-- Lyhyt ja ytimekäs (1-3 kappaletta)
-- Käytä Markdown-muotoilua
-- Älä selitä tai kommentoi tehtävää
-- Jos viestejä on vähän, tee lyhyt profiili
-- Jos viestejä on paljon, voit tehdä pidemmän mutta pidä silti kohtuullisena
-- Älä kirjoita vain käyttäjän viestejä uudelleen, ellei hän toista jotain tiettyjä asiaa usein
-- Tärkeintä on kirjoittaa teksti pohjautuen käyttäjän viestien sisältöön ja tyyliin
-- Älä kirjoita markdownia
-- Voit kirjoittaa otsikoita ilman markdownia
+EHDOTTOMAT KIELLOT:
+- ÄLÄ KOSKAAN lainaa käyttäjän viestejä (ei "*viesti*", ei "kuten hän sanoi")
+- ÄLÄ listaa mitä käyttäjä on sanonut
+- ÄLÄ käytä lainausmerkkejä viestien toistamiseen
+- ÄLÄ kirjoita "hänen kommenttinsa kuten..." tai vastaavia
+- ÄLÄ paljasta henkilökohtaisia tietoja
 
-FOKUS:
-- Käyttäjän chat-käyttäytyminen ja tyylit
-- Mielenkiintoiset piirteet viesteistä
-- Huumori ja persoonallisuus
-- Suhtautuminen peleihin, streamiin, muihin katsojiin
+TYYLI:
+- Satiirinen, liioiteltu Wikipedia-artikkeli
+- Kuvittele käyttäjä legendaarisena hahmona chatin historiassa
+- Käytä absurdia huumoria ja metaforia
+- Keksi hauska "titteli" tai "rooli" käyttäjälle (esim. "Chatin virallinen skeptikko", "Emote-reaktioiden mestari")
+- Kirjoita kuin käyttäjä olisi kuuluisa henkilö, josta kirjoitetaan jälkipolville
 
-OHJE:
-Jos saat olemassa olevan profiilin, päivitä sitä uusien viestien perusteella säilyttäen aikaisemmasta hyvät osat.
-Jos ei ole olemassa olevaa profiilia, luo uusi kokonaan.
-Lopputuloksen tulee olla yhtenäinen, päivitetty Wikipedia-artikkeli käyttäjästä.`;
+MITÄ ETSIÄ VIESTEISTÄ (mutta älä lainaa):
+- Kirjoitustyyli: käyttääkö paljon emojeja, capslockkia, lyhyitä vai pitkiä viestejä?
+- Persoonallisuus: optimisti, pessimisti, trollaaja, auttaja, lurkkari?
+- Kiinnostuksen kohteet: pelit, anime, musiikki, draama?
+- Suhtautuminen: miten reagoi streamiin, peleihin, muihin chattereihin?
+- Toistuvat teemat: valittaako, kehuuko, kyseleekö, kommentoiko?
+
+RAKENNE:
+1. Avauslause: Kuka tämä legenda on? (hauska titteli/rooli)
+2. Keskiosa: Persoonallisuuspiirteet ja käyttäytyminen chatissa (EI lainauksia)
+3. Lopetus: Hauska yhteenveto tai "perintö" chatin historiassa
+
+PITUUS: 2-4 lyhyttä kappaletta. Laatu > määrä.
+
+PÄIVITYS: Jos saat olemassa olevan profiilin, säilytä parhaat osat ja rikasta uusilla havainnoilla. Älä toista samoja asioita.`;
 
 /**
  * Generate or update an AI summary for a user based on their chat messages
@@ -62,13 +66,15 @@ export async function generateOrUpdateAISummary(
     );
 
     // Build the user prompt
-    let userPrompt = `Käyttäjänimi: ${username}\n\n`;
+    let userPrompt = `KÄYTTÄJÄ: ${username}\n\n`;
 
     if (existingSummary) {
-      userPrompt += `OLEMASSA OLEVA PROFIILI:\n${existingSummary}\n\n`;
+      userPrompt += `NYKYINEN PROFIILI (säilytä parhaat osat, älä toista):\n${existingSummary}\n\n`;
     }
 
-    userPrompt += `UUDET CHAT-VIESTIT:\n${truncatedMessages}`;
+    userPrompt += `ANALYSOITAVAT VIESTIT (älä lainaa näitä, vaan analysoi persoonallisuutta):\n${truncatedMessages}\n\n`;
+
+    userPrompt += `MUISTUTUS: Kirjoita satiirinen henkilökuva. ÄLÄ lainaa viestejä. Keskity persoonallisuuteen ja hauskaan kuvaukseen.`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -82,8 +88,8 @@ export async function generateOrUpdateAISummary(
           content: userPrompt,
         },
       ],
-      max_tokens: 1000, // Keep summaries concise
-      temperature: 0.8, // Add some creativity
+      max_tokens: 1000, // Concise but room for good content
+      temperature: 0.7, // Creative but more consistent
     });
 
     const aiSummary = completion.choices[0]?.message?.content?.trim();
