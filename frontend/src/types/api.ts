@@ -33,6 +33,28 @@ export interface StreamListItem {
   }>;
 }
 
+// Single stream detail (for VOD page)
+export interface StreamDetail {
+  id: number;
+  twitchId: string;
+  startTime: string;
+  endTime: string | null;
+  duration: number | null;
+  thumbnailUrl: string | null;
+  totalMessages: number;
+  totalRedemptions: number;
+  uniqueViewers: number;
+  segments: Array<{
+    id: number;
+    title: string;
+    gameName: string;
+    gameBoxArtUrl: string | null;
+    startTime: string;
+    endTime: string | null;
+    duration: number | null;
+  }>;
+}
+
 export interface StreamTimeline {
   id: number;
   twitchId: string;
@@ -62,4 +84,74 @@ export interface StreamTimeline {
     uniqueViewers: number;
     peakViewers: number;
   };
+}
+
+// Leaderboard types
+export type TimeRange = "all" | "year" | "month" | "week";
+
+export interface LeaderboardUser {
+  id: number;
+  twitchId: string;
+  login: string;
+  displayName: string;
+  avatar: string | null;
+  totalMessages: number;
+  totalWatchTime: number;
+  totalPointsSpent: number;
+  totalRedemptions: number;
+}
+
+export interface LeaderboardEmote {
+  id: number;
+  name: string;
+  platform: string;
+  imageUrl: string | null;
+  totalUsage: number;
+}
+
+export interface LeaderboardReward {
+  id: number;
+  twitchId: string;
+  title: string;
+  cost: number;
+  imageUrl: string | null;
+  totalRedemptions: number;
+  totalPointsSpent: number;
+}
+
+export interface LeaderboardGame {
+  id: number;
+  twitchId: string;
+  name: string;
+  boxArtUrl: string | null;
+  totalWatchTime: number;
+  totalStreams: number;
+}
+
+export interface RewardUserLeaderboard {
+  reward: {
+    id: number;
+    twitchId: string;
+    title: string;
+    cost: number;
+    imageUrl: string | null;
+  };
+  users: Array<{
+    id: number;
+    twitchId: string;
+    login: string;
+    displayName: string;
+    avatar: string | null;
+    redemptionCount: number;
+    totalPointsSpent: number;
+  }>;
+  total: number;
+}
+
+export interface LeaderboardSummary {
+  topWatchtime: LeaderboardUser[];
+  topMessages: LeaderboardUser[];
+  topPointsSpent: LeaderboardUser[];
+  topEmotes: LeaderboardEmote[];
+  topRewards: LeaderboardReward[];
 }

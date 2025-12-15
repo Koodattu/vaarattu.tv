@@ -58,6 +58,36 @@ export interface LeaderboardGame {
   totalStreams: number;
 }
 
+// Per-reward user leaderboard
+export interface RewardUserLeaderboard {
+  reward: {
+    id: number;
+    twitchId: string;
+    title: string;
+    cost: number;
+    imageUrl: string | null;
+  };
+  users: Array<{
+    id: number;
+    twitchId: string;
+    login: string;
+    displayName: string;
+    avatar: string | null;
+    redemptionCount: number;
+    totalPointsSpent: number;
+  }>;
+  total: number;
+}
+
+// Leaderboard summary (for main page - top 3 of each category)
+export interface LeaderboardSummary {
+  topWatchtime: LeaderboardUser[];
+  topMessages: LeaderboardUser[];
+  topPointsSpent: LeaderboardUser[];
+  topEmotes: LeaderboardEmote[];
+  topRewards: LeaderboardReward[];
+}
+
 // User types
 export interface UserListItem {
   id: number;
@@ -121,6 +151,28 @@ export interface StreamListItem {
   segments: Array<{
     title: string;
     gameName: string;
+    startTime: Date;
+    endTime: Date | null;
+    duration: number | null;
+  }>;
+}
+
+// Single stream detail (for VOD page)
+export interface StreamDetail {
+  id: number;
+  twitchId: string;
+  startTime: Date;
+  endTime: Date | null;
+  duration: number | null;
+  thumbnailUrl: string | null;
+  totalMessages: number;
+  totalRedemptions: number;
+  uniqueViewers: number;
+  segments: Array<{
+    id: number;
+    title: string;
+    gameName: string;
+    gameBoxArtUrl: string | null;
     startTime: Date;
     endTime: Date | null;
     duration: number | null;

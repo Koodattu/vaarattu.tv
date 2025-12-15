@@ -1,5 +1,5 @@
 import prisma from "../prismaClient";
-import { StreamListItem, StreamTimeline } from "../types/api.types";
+import { StreamListItem, StreamDetail, StreamTimeline } from "../types/api.types";
 import { calculateOffset } from "../utils/pagination";
 
 export class StreamService {
@@ -70,6 +70,72 @@ export class StreamService {
     });
 
     return { streams: formattedStreams, total };
+  }
+
+  async getStream(streamId: number): Promise<StreamDetail | null> {
+    const stream = await prisma.stream.findUnique({
+      where: { id: streamId },
+      select: {
+        id: true,
+        twitchId: true,
+        startTime: true,
+        endTime: true,
+        thumbnailUrl: true,
+        _count: {
+          select: {
+            messages: true,
+            redemptions: true,
+            viewSessions: true,
+          },
+        },
+        segments: {
+          select: {
+            id: true,
+            startTime: true,
+            endTime: true,
+            title: true,
+            game: {
+              select: {
+                name: true,
+                boxArtUrl: true,
+              },
+            },
+          },
+          orderBy: { startTime: "asc" },
+        },
+      },
+    });
+
+    if (!stream) {
+      return null;
+    }
+
+    const duration = stream.endTime ? Math.round((stream.endTime.getTime() - stream.startTime.getTime()) / (1000 * 60)) : null;
+
+    return {
+      id: stream.id,
+      twitchId: stream.twitchId,
+      startTime: stream.startTime,
+      endTime: stream.endTime,
+      duration,
+      thumbnailUrl: stream.thumbnailUrl,
+      totalMessages: stream._count.messages,
+      totalRedemptions: stream._count.redemptions,
+      uniqueViewers: stream._count.viewSessions,
+      segments: stream.segments.map((segment) => {
+        const segmentDuration = segment.endTime ? Math.round((segment.endTime.getTime() - segment.startTime.getTime()) / (1000 * 60)) : null;
+
+        return {
+          id: segment.id,
+          title: segment.title,
+          gameName: segment.game.name,
+          gameBoxArtUrl: segment.game.boxArtUrl,
+          startTime: segment.startTime,
+          endTime: segment.endTime,
+          duration: segmentDuration,
+        };
+      }),
+    };
   }
 
   async getStreamTimeline(streamId: number): Promise<StreamTimeline | null> {

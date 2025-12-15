@@ -18,6 +18,31 @@ export class StreamController {
     });
   }
 
+  async getStream(req: Request, res: Response<ApiResponse>) {
+    const streamId = parseInt(req.params.id);
+
+    if (isNaN(streamId)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid stream ID",
+      });
+    }
+
+    const stream = await streamService.getStream(streamId);
+
+    if (!stream) {
+      return res.status(404).json({
+        success: false,
+        error: "Stream not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: stream,
+    });
+  }
+
   async getStreamTimeline(req: Request, res: Response<ApiResponse>) {
     const streamId = parseInt(req.params.id);
 
