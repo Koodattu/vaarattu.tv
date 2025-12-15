@@ -18,6 +18,8 @@ SÄÄNNÖT:
 - Jos viestejä on paljon, voit tehdä pidemmän mutta pidä silti kohtuullisena
 - Älä kirjoita vain käyttäjän viestejä uudelleen, ellei hän toista jotain tiettyjä asiaa usein
 - Tärkeintä on kirjoittaa teksti pohjautuen käyttäjän viestien sisältöön ja tyyliin
+- Älä kirjoita markdownia
+- Voit kirjoittaa otsikoita ilman markdownia
 
 FOKUS:
 - Käyttäjän chat-käyttäytyminen ja tyylit
