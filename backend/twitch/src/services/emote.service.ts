@@ -153,11 +153,17 @@ async function syncEmotesToDatabase(): Promise<void> {
   // Delete conflicting records first (before creates and updates)
   const uniqueToDelete = [...new Set(toDelete)];
   if (uniqueToDelete.length > 0) {
+    // First delete associated EmoteUsage records to avoid foreign key constraint violation
+    await prisma.emoteUsage.deleteMany({
+      where: { emoteId: { in: uniqueToDelete } },
+    });
+
+    // Then delete the emote records
     await prisma.emote.deleteMany({
       where: { id: { in: uniqueToDelete } },
     });
     deleted = uniqueToDelete.length;
-    console.log(`[Emote] Deleted ${deleted} conflicting emote records`);
+    console.log(`[Emote] Deleted ${deleted} conflicting emote records and their usage data`);
   }
 
   if (toCreate.length > 0) {

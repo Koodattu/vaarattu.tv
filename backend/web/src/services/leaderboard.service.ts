@@ -51,38 +51,56 @@ export class LeaderboardService {
       whereClause.platform = platform;
     }
 
-    const [emotes, total] = await Promise.all([
-      prisma.emote.findMany({
-        where: whereClause,
-        select: {
-          id: true,
-          name: true,
-          platform: true,
-          imageUrl: true,
-          _count: {
-            select: {
-              emoteUsages: true,
-            },
-          },
+    // Get emote usage counts by aggregating the sum of counts from EmoteUsage
+    const emoteUsageSums = await prisma.emoteUsage.groupBy({
+      by: ["emoteId"],
+      _sum: {
+        count: true,
+      },
+      orderBy: {
+        _sum: {
+          count: "desc",
         },
-        orderBy: {
-          emoteUsages: {
-            _count: "desc",
-          },
-        },
-        skip: offset,
-        take: limit,
-      }),
-      prisma.emote.count({ where: whereClause }),
-    ]);
+      },
+    });
 
-    const formattedEmotes: LeaderboardEmote[] = emotes.map((emote) => ({
+    // Create a map of emoteId to total usage count
+    const usageMap = new Map(emoteUsageSums.map((item) => [item.emoteId, item._sum.count || 0]));
+
+    // Get emote IDs in the correct order
+    const emoteIds = emoteUsageSums.map((item) => item.emoteId);
+
+    // Apply pagination and platform filter
+    const filteredEmoteIds = emoteIds.slice(offset, offset + limit);
+
+    // Fetch emote details
+    const emotes = await prisma.emote.findMany({
+      where: {
+        id: { in: filteredEmoteIds },
+        ...whereClause,
+      },
+      select: {
+        id: true,
+        name: true,
+        platform: true,
+        imageUrl: true,
+      },
+    });
+
+    // Sort emotes by usage count (maintain order from aggregation)
+    const emoteMap = new Map(emotes.map((e) => [e.id, e]));
+    const sortedEmotes = filteredEmoteIds.map((id) => emoteMap.get(id)).filter((e): e is NonNullable<typeof e> => e !== undefined);
+
+    const formattedEmotes: LeaderboardEmote[] = sortedEmotes.map((emote) => ({
       id: emote.id,
       name: emote.name,
       platform: emote.platform,
       imageUrl: emote.imageUrl,
-      totalUsage: emote._count.emoteUsages,
+      totalUsage: usageMap.get(emote.id) || 0,
     }));
+
+    // Get total count
+    const total = await prisma.emote.count({ where: whereClause });
 
     return { emotes: formattedEmotes, total };
   }
