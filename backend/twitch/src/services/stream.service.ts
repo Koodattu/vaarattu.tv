@@ -27,22 +27,44 @@ export async function processStreamOnlineEvent(event: EventSubStreamOnlineEvent)
     name: stream.gameName,
     boxArtUrl: game?.boxArtUrl,
   });
-  // Create stream entry and initial segment
-  const dbStream = await prisma.stream.create({
-    data: {
-      twitchId: stream.id,
-      startTime: stream.startDate,
-      thumbnailUrl: stream.thumbnailUrl,
-      segments: {
-        create: {
-          startTime: stream.startDate,
-          title: stream.title,
-          gameId: dbGame.id,
-        },
-      },
-    },
+
+  // Check if stream already exists in database
+  let dbStream = await prisma.stream.findUnique({
+    where: { twitchId: stream.id },
     include: { segments: true },
   });
+
+  if (dbStream) {
+    console.log(`[EventSub] Stream ${stream.id} already exists in database, reusing existing record`);
+
+    // If the stream was marked as ended, reopen it
+    if (dbStream.endTime !== null) {
+      console.log(`[EventSub] Reopening previously ended stream ${stream.id}`);
+      dbStream = await prisma.stream.update({
+        where: { id: dbStream.id },
+        data: { endTime: null },
+        include: { segments: true },
+      });
+    }
+  } else {
+    // Create stream entry and initial segment
+    dbStream = await prisma.stream.create({
+      data: {
+        twitchId: stream.id,
+        startTime: stream.startDate,
+        thumbnailUrl: stream.thumbnailUrl,
+        segments: {
+          create: {
+            startTime: stream.startDate,
+            title: stream.title,
+            gameId: dbGame.id,
+          },
+        },
+      },
+      include: { segments: true },
+    });
+    console.log(`[EventSub] Created new stream record ${stream.id}`);
+  }
 
   // Start tracking this stream in the stream state manager
   await streamState.startStream(dbStream.id);

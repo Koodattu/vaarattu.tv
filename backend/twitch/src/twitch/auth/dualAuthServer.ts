@@ -26,6 +26,7 @@ const scopes = {
     "moderator:read:followers",
     "moderator:read:chatters",
     "chat:read",
+    "chat:edit",
     "user:read:chat",
     "moderation:read",
     "channel:read:vips",
