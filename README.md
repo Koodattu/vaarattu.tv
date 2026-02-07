@@ -4,6 +4,8 @@ A full-stack Twitch analytics and community engagement platform for [twitch.tv/v
 
 Track everything that happens on stream — from chat messages and watchtime to channel point redemptions and emote usage across multiple platforms. Features AI-generated viewer profiles, comprehensive leaderboards, and detailed moderator tools.
 
+![Application Screenshot](images/preview.png)
+
 ## ✨ What Makes This Special
 
 - **🤖 AI-Generated Viewer Profiles**: Satirical Wikipedia-style biographies written in Finnish that update automatically as viewers chat. Each profile is unique, humorous, and captures the viewer's personality based on their chat behavior.
