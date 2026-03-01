@@ -93,6 +93,12 @@ export default function VodDetailPage({ params }: VodDetailPageProps) {
               <span>{formatRelativeTime(vod.startTime)}</span>
               {vod.duration && <span className="text-purple-400">{formatDuration(vod.duration)}</span>}
             </div>
+            <Link
+              href={`/vods/${vod.id}/timeline`}
+              className="mt-4 inline-block px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-sm font-medium transition-colors"
+            >
+              View Timeline
+            </Link>
           </div>
 
           {/* Stats */}
