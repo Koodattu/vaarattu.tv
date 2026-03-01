@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { UserProfile, UserViewSession } from "@/types/api";
+import { UserProfile } from "@/types/api";
 import { apiClient } from "@/lib/api";
 import { formatDuration, formatRelativeTime, formatDate } from "@/lib/utils";
 
@@ -48,8 +48,6 @@ export default function ProfilePage() {
   const login = params.login as string;
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [sessions, setSessions] = useState<UserViewSession[]>([]);
-  const [sessionsLoading, setSessionsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,14 +60,6 @@ export default function ProfilePage() {
 
       if (response.success && response.data) {
         setProfile(response.data);
-
-        // Fetch view sessions for timeline
-        setSessionsLoading(true);
-        const sessionsResponse = await apiClient.getUserViewSessions(response.data.id);
-        if (sessionsResponse.success && sessionsResponse.data) {
-          setSessions(sessionsResponse.data);
-        }
-        setSessionsLoading(false);
       } else {
         setError(response.error || "Failed to load profile");
       }
@@ -299,8 +289,8 @@ export default function ProfilePage() {
               </table>
             </div>
 
-            {/* View on Twitch link */}
-            <div className="p-4 pt-0">
+            {/* Action buttons */}
+            <div className="p-4 pt-0 space-y-2">
               <a
                 href={`https://twitch.tv/${profile.login}`}
                 target="_blank"
@@ -309,55 +299,12 @@ export default function ProfilePage() {
               >
                 View on Twitch
               </a>
-            </div>
-
-            {/* View Sessions Timeline */}
-            <div className="p-4 pt-0">
-              <h3 className="text-sm font-semibold text-gray-400 mb-3">View Sessions</h3>
-
-              {sessionsLoading && (
-                <div className="flex items-center gap-2 text-gray-500 text-xs py-2">
-                  <div className="animate-spin rounded-full h-3 w-3 border-b border-purple-500"></div>
-                  Loading sessions...
-                </div>
-              )}
-
-              {!sessionsLoading && sessions.length === 0 && <p className="text-gray-600 text-xs">No session data yet.</p>}
-
-              {!sessionsLoading && sessions.length > 0 && (
-                <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-                  {/* Group sessions by stream */}
-                  {Object.values(
-                    sessions.reduce<Record<number, { streamId: number; streamTitle: string; gameName: string; streamStartTime: string; sessions: UserViewSession[] }>>((acc, s) => {
-                      if (!acc[s.streamId]) {
-                        acc[s.streamId] = {
-                          streamId: s.streamId,
-                          streamTitle: s.streamTitle,
-                          gameName: s.gameName,
-                          streamStartTime: s.streamStartTime,
-                          sessions: [],
-                        };
-                      }
-                      acc[s.streamId].sessions.push(s);
-                      return acc;
-                    }, {}),
-                  )
-                    .sort((a, b) => new Date(b.streamStartTime).getTime() - new Date(a.streamStartTime).getTime())
-                    .map((group) => {
-                      const totalMinutes = group.sessions.reduce((sum, s) => sum + (s.duration || 0), 0);
-                      return (
-                        <Link key={group.streamId} href={`/vods/${group.streamId}/timeline`} className="block bg-gray-700/50 hover:bg-gray-700 rounded-lg p-3 transition-colors">
-                          <div className="text-white text-xs font-medium truncate">{group.streamTitle}</div>
-                          <div className="text-gray-500 text-xs mt-0.5">{group.gameName}</div>
-                          <div className="flex items-center justify-between mt-1">
-                            <span className="text-gray-500 text-xs">{formatDate(group.streamStartTime)}</span>
-                            <span className="text-purple-400 text-xs">{formatDuration(totalMinutes)}</span>
-                          </div>
-                        </Link>
-                      );
-                    })}
-                </div>
-              )}
+              <Link
+                href={`/profiles/${profile.login}/timelines`}
+                className="block w-full text-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md text-sm font-medium transition-colors"
+              >
+                View Timelines
+              </Link>
             </div>
           </div>
         </div>
