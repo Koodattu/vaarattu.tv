@@ -172,6 +172,19 @@ export interface UserListItem {
   isVip?: boolean;
 }
 
+// User view session (for profile timeline)
+export interface UserViewSession {
+  streamId: number;
+  streamTwitchId: string;
+  streamStartTime: string;
+  streamEndTime: string | null;
+  streamTitle: string;
+  gameName: string;
+  sessionStart: string;
+  sessionEnd: string | null;
+  duration: number | null; // minutes
+}
+
 export interface UserProfile extends UserListItem {
   aiSummary: string | null;
   aiSummaryLastUpdate: string | null;

@@ -24,6 +24,7 @@ export default function VodTimelinePage({ params }: VodTimelinePageProps) {
   const [timeline, setTimeline] = useState<StreamTimeline | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [usernameFilter, setUsernameFilter] = useState("");
 
   useEffect(() => {
     const fetchTimeline = async () => {
@@ -49,6 +50,7 @@ export default function VodTimelinePage({ params }: VodTimelinePageProps) {
     fetchTimeline();
   }, [id]);
 
+  // Group sessions by user
   const groupedViewers = useMemo<GroupedViewerSessions[]>(() => {
     if (!timeline) return [];
 
@@ -71,6 +73,14 @@ export default function VodTimelinePage({ params }: VodTimelinePageProps) {
     return Object.values(grouped).sort((a, b) => b.totalDuration - a.totalDuration);
   }, [timeline]);
 
+  // Filter grouped viewers by search term
+  const filteredViewers = useMemo(() => {
+    if (!usernameFilter) return groupedViewers;
+    const term = usernameFilter.toLowerCase();
+    return groupedViewers.filter((v) => v.userDisplayName.toLowerCase().includes(term) || v.userLogin.toLowerCase().includes(term));
+  }, [groupedViewers, usernameFilter]);
+
+  // Timeline position helpers
   const streamStart = timeline ? new Date(timeline.startTime) : null;
   const streamEnd = timeline ? (timeline.endTime ? new Date(timeline.endTime) : new Date()) : null;
   const streamDurationMs = streamStart && streamEnd ? streamEnd.getTime() - streamStart.getTime() : 0;
@@ -108,6 +118,7 @@ export default function VodTimelinePage({ params }: VodTimelinePageProps) {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Header */}
       <div className="mb-6">
         <Link href={`/vods/${id}`} className="text-purple-400 hover:text-purple-300 transition-colors text-sm mb-4 inline-block">
           ← Back to VOD
@@ -120,6 +131,7 @@ export default function VodTimelinePage({ params }: VodTimelinePageProps) {
         </div>
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
         <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
           <div className="text-xl font-bold text-white">{timeline.stats.totalMessages.toLocaleString()}</div>
@@ -139,9 +151,11 @@ export default function VodTimelinePage({ params }: VodTimelinePageProps) {
         </div>
       </div>
 
+      {/* Segments visualization */}
       <div className="bg-gray-800 rounded-lg border border-gray-700 p-4 mb-8">
         <h2 className="text-xl font-semibold text-white mb-4">Segments</h2>
 
+        {/* Segment timeline bar */}
         <div className="relative h-12 bg-gray-900 rounded mb-4 overflow-hidden">
           {timeline.segments.map((segment) => {
             const left = getTimelinePosition(segment.startTime);
@@ -151,17 +165,17 @@ export default function VodTimelinePage({ params }: VodTimelinePageProps) {
             return (
               <div
                 key={segment.id}
-                className="absolute top-1 bottom-1 bg-purple-600/90 rounded"
-                style={{
-                  left: `${left}%`,
-                  width: `${width}%`,
-                }}
+                className="absolute top-1 bottom-1 bg-purple-600/90 rounded flex items-center justify-center overflow-hidden"
+                style={{ left: `${left}%`, width: `${width}%`, minWidth: "40px" }}
                 title={`${segment.gameName} (${formatDuration(segment.duration)})`}
-              />
+              >
+                <span className="text-white text-xs font-medium truncate px-1">{segment.gameName}</span>
+              </div>
             );
           })}
         </div>
 
+        {/* Segment detail cards */}
         <div className="space-y-3">
           {timeline.segments.map((segment, index) => (
             <div key={segment.id} className="bg-gray-900 rounded-lg p-3 border border-gray-700">
@@ -190,22 +204,83 @@ export default function VodTimelinePage({ params }: VodTimelinePageProps) {
         </div>
       </div>
 
+      {/* Viewer Sessions with visual timeline bars */}
       <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-        <h2 className="text-xl font-semibold text-white mb-4">Viewer Sessions ({groupedViewers.length})</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <h2 className="text-xl font-semibold text-white">
+            Viewer Sessions ({filteredViewers.length}
+            {usernameFilter ? ` of ${groupedViewers.length}` : ""})
+          </h2>
 
-        {groupedViewers.length === 0 && <p className="text-gray-400 text-sm">No viewer session data available for this stream.</p>}
+          {/* Search filter */}
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              placeholder="Search viewers..."
+              value={usernameFilter}
+              onChange={(e) => setUsernameFilter(e.target.value)}
+              className="px-3 py-1.5 border border-gray-600 rounded-md text-sm bg-gray-900 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent w-48"
+            />
+            {usernameFilter && (
+              <button onClick={() => setUsernameFilter("")} className="px-2 py-1.5 text-xs text-gray-400 hover:text-white transition-colors" title="Clear filter">
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
 
-        {groupedViewers.length > 0 && (
-          <div className="space-y-2">
-            {groupedViewers.map((viewer) => (
-              <div key={viewer.userId} className="flex items-center gap-3 py-2 border-b border-gray-700 last:border-0">
-                <div className="min-w-0 flex-1">
-                  <div className="text-white font-medium truncate">{viewer.userDisplayName}</div>
-                  <div className="text-xs text-gray-500">@{viewer.userLogin}</div>
+        {timeline.viewerSessions.length === 0 && <p className="text-gray-400 text-sm">No viewer session data available for this stream.</p>}
+
+        {filteredViewers.length === 0 && timeline.viewerSessions.length > 0 && (
+          <div className="text-center py-6 text-gray-500">
+            No viewers matching &ldquo;{usernameFilter}&rdquo;.{" "}
+            <button onClick={() => setUsernameFilter("")} className="text-purple-400 hover:text-purple-300 underline">
+              Clear filter
+            </button>
+          </div>
+        )}
+
+        {filteredViewers.length > 0 && (
+          <div className="space-y-1">
+            {filteredViewers.map((viewer) => (
+              <div key={viewer.userId} className="flex items-center gap-3 py-1.5">
+                {/* Username */}
+                <Link
+                  href={`/profiles/${viewer.userLogin}`}
+                  className="w-32 text-sm font-medium text-white truncate hover:text-purple-400 transition-colors flex-shrink-0"
+                  title={viewer.userDisplayName}
+                >
+                  {viewer.userDisplayName}
+                </Link>
+
+                {/* Visual timeline bar */}
+                <div className="flex-1 relative h-6 bg-gray-900 rounded overflow-hidden">
+                  {viewer.sessions.map((session, sessionIndex) => {
+                    const leftPos = getTimelinePosition(session.sessionStart);
+                    const rightPos = session.sessionEnd ? getTimelinePosition(session.sessionEnd) : 100;
+                    const width = Math.max(0.5, rightPos - leftPos);
+
+                    return (
+                      <div
+                        key={sessionIndex}
+                        className="absolute top-1 h-4 bg-green-500 rounded"
+                        style={{
+                          left: `${leftPos}%`,
+                          width: `${width}%`,
+                          minWidth: "2px",
+                        }}
+                        title={`${viewer.userDisplayName}: ${formatDuration(session.duration)} — ${new Date(session.sessionStart).toLocaleTimeString()} to ${
+                          session.sessionEnd ? new Date(session.sessionEnd).toLocaleTimeString() : "ongoing"
+                        }`}
+                      />
+                    );
+                  })}
                 </div>
-                <div className="text-sm text-gray-300 text-right">
+
+                {/* Duration / session count */}
+                <div className="w-20 text-xs text-gray-400 text-right flex-shrink-0">
                   <div>{formatDuration(viewer.totalDuration)}</div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-gray-600">
                     {viewer.sessions.length} session{viewer.sessions.length !== 1 ? "s" : ""}
                   </div>
                 </div>

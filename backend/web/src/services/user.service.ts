@@ -1,5 +1,5 @@
 import prisma from "../prismaClient";
-import { UserListItem, UserProfile } from "../types/api.types";
+import { UserListItem, UserProfile, UserViewSession } from "../types/api.types";
 import { calculateOffset } from "../utils/pagination";
 
 export class UserService {
@@ -252,6 +252,51 @@ export class UserService {
         detectedAt: nh.detectedAt,
       })),
     };
+  }
+
+  async getUserViewSessions(userId: number): Promise<UserViewSession[]> {
+    const sessions = await prisma.viewSession.findMany({
+      where: { userId },
+      select: {
+        sessionStart: true,
+        sessionEnd: true,
+        stream: {
+          select: {
+            id: true,
+            twitchId: true,
+            startTime: true,
+            endTime: true,
+            segments: {
+              select: {
+                title: true,
+                game: {
+                  select: { name: true },
+                },
+              },
+              take: 1,
+              orderBy: { startTime: "asc" },
+            },
+          },
+        },
+      },
+      orderBy: { sessionStart: "desc" },
+    });
+
+    return sessions.map((s) => {
+      const durationMs = s.sessionEnd ? s.sessionEnd.getTime() - s.sessionStart.getTime() : null;
+
+      return {
+        streamId: s.stream.id,
+        streamTwitchId: s.stream.twitchId,
+        streamStartTime: s.stream.startTime,
+        streamEndTime: s.stream.endTime,
+        streamTitle: s.stream.segments[0]?.title || "Untitled Stream",
+        gameName: s.stream.segments[0]?.game.name || "Unknown",
+        sessionStart: s.sessionStart,
+        sessionEnd: s.sessionEnd,
+        duration: durationMs !== null ? Math.round(durationMs / 60000) : null,
+      };
+    });
   }
 
   async getUserByLogin(login: string): Promise<UserProfile | null> {

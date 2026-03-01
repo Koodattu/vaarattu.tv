@@ -19,4 +19,7 @@ router.get("/login/:login", asyncHandler(userController.getUserProfileByLogin.bi
 // GET /api/users/:id - Get full user profile by ID
 router.get("/:id", asyncHandler(userController.getUserProfile.bind(userController)));
 
+// GET /api/users/:id/sessions - Get user view sessions (for profile timeline)
+router.get("/:id/sessions", asyncHandler(userController.getUserViewSessions.bind(userController)));
+
 export default router;

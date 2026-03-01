@@ -12,6 +12,7 @@ import {
   TimeRange,
   UserListItem,
   UserProfile,
+  UserViewSession,
 } from "@/types/api";
 
 // Use NEXT_PUBLIC_API_BASE_URL if set, else default to empty string (relative path)
@@ -60,7 +61,7 @@ class ApiClient {
     sortBy: "messages" | "watchtime" | "points" = "messages",
     timeRange: TimeRange = "all",
     page: number = 1,
-    limit: number = 20
+    limit: number = 20,
   ): Promise<ApiResponse<LeaderboardUser[]>> {
     return this.fetchApi<LeaderboardUser[]>(`/api/leaderboards/users?sortBy=${sortBy}&page=${page}&limit=${limit}&timeRange=${timeRange}`);
   }
@@ -108,6 +109,10 @@ class ApiClient {
 
   async getUserProfileByLogin(login: string): Promise<ApiResponse<UserProfile>> {
     return this.fetchApi<UserProfile>(`/api/users/login/${encodeURIComponent(login)}`);
+  }
+
+  async getUserViewSessions(userId: number): Promise<ApiResponse<UserViewSession[]>> {
+    return this.fetchApi<UserViewSession[]>(`/api/users/${userId}/sessions`);
   }
 }
 

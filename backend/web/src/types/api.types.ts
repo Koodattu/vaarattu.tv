@@ -189,6 +189,19 @@ export interface UserMessage {
   streamStartTime: Date;
 }
 
+// User view session (for profile timeline)
+export interface UserViewSession {
+  streamId: number;
+  streamTwitchId: string;
+  streamStartTime: Date;
+  streamEndTime: Date | null;
+  streamTitle: string;
+  gameName: string;
+  sessionStart: Date;
+  sessionEnd: Date | null;
+  duration: number | null; // minutes
+}
+
 export interface StreamTimeline {
   id: number;
   twitchId: string;

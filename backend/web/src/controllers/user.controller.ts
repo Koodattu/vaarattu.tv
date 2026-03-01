@@ -79,4 +79,22 @@ export class UserController {
       data: profile,
     });
   }
+
+  async getUserViewSessions(req: Request, res: Response<ApiResponse>) {
+    const userId = parseInt(req.params.id);
+
+    if (isNaN(userId)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid user ID",
+      });
+    }
+
+    const sessions = await userService.getUserViewSessions(userId);
+
+    res.json({
+      success: true,
+      data: sessions,
+    });
+  }
 }
