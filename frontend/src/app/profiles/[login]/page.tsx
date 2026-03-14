@@ -305,6 +305,12 @@ export default function ProfilePage() {
               >
                 View Timelines
               </Link>
+              <Link
+                href={`/profiles/${profile.login}/chat-history`}
+                className="block w-full text-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md text-sm font-medium transition-colors"
+              >
+                View Chat History
+              </Link>
             </div>
           </div>
         </div>

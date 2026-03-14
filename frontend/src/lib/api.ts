@@ -12,6 +12,7 @@ import {
   TimeRange,
   UserListItem,
   UserProfile,
+  UserMessage,
   UserViewSession,
 } from "@/types/api";
 
@@ -113,6 +114,14 @@ class ApiClient {
 
   async getUserViewSessions(userId: number): Promise<ApiResponse<UserViewSession[]>> {
     return this.fetchApi<UserViewSession[]>(`/api/users/${userId}/sessions`);
+  }
+
+  async getUserMessages(userId: number, page: number = 1, limit: number = 200, search?: string): Promise<ApiResponse<UserMessage[]>> {
+    let url = `/api/mod/users/${userId}/messages?page=${page}&limit=${limit}`;
+    if (search) {
+      url += `&search=${encodeURIComponent(search)}`;
+    }
+    return this.fetchApi<UserMessage[]>(url);
   }
 }
 

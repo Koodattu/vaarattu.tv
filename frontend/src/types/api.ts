@@ -185,6 +185,15 @@ export interface UserViewSession {
   duration: number | null; // minutes
 }
 
+export interface UserMessage {
+  id: number;
+  twitchId: string;
+  content: string;
+  timestamp: string;
+  streamId: number;
+  streamStartTime: string;
+}
+
 export interface UserProfile extends UserListItem {
   aiSummary: string | null;
   aiSummaryLastUpdate: string | null;
