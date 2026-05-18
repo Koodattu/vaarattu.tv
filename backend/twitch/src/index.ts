@@ -46,9 +46,9 @@ async function start() {
     await initializeEmotes();
 
     const chatClient = await tryCreateChatClient();
-    chatClient.connect();
-    console.log("Twitch chat client connected and listening.");
     registerChatHandlers(chatClient);
+    await chatClient.connect();
+    console.log("Twitch chat client connected and listening.");
     await startEventSubWs();
 
     // Start periodic stream status polling to catch missed events
