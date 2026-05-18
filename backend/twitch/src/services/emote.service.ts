@@ -108,10 +108,17 @@ async function syncEmotesToDatabase(): Promise<void> {
       // New emote by name+platform
       // But check if platform+emoteId already exists with different name
       if (existingByEmoteId && existingByEmoteId.name !== emoteData.name) {
-        // Conflict: same platform+emoteId but different name
-        // Mark the old one for deletion and create new
-        toDelete.push(existingByEmoteId.id);
-        toCreate.push(emoteData);
+        // Same platform ID means this is the same emote renamed by the provider.
+        // Preserve the DB row so usage/profile analytics keep pointing at it.
+        toUpdate.push({
+          id: existingByEmoteId.id,
+          data: {
+            name: emoteData.name,
+            imageUrl: emoteData.imageUrl,
+            isGlobal: emoteData.isGlobal,
+            channelId: emoteData.channelId,
+          },
+        });
       } else if (!existingByEmoteId) {
         toCreate.push(emoteData);
       }
@@ -153,17 +160,19 @@ async function syncEmotesToDatabase(): Promise<void> {
   // Delete conflicting records first (before creates and updates)
   const uniqueToDelete = [...new Set(toDelete)];
   if (uniqueToDelete.length > 0) {
-    // First delete associated EmoteUsage records to avoid foreign key constraint violation
-    await prisma.emoteUsage.deleteMany({
-      where: { emoteId: { in: uniqueToDelete } },
-    });
-
-    // Then delete the emote records
-    await prisma.emote.deleteMany({
-      where: { id: { in: uniqueToDelete } },
-    });
+    await prisma.$transaction([
+      prisma.viewerProfileTopEmote.deleteMany({
+        where: { emoteId: { in: uniqueToDelete } },
+      }),
+      prisma.emoteUsage.deleteMany({
+        where: { emoteId: { in: uniqueToDelete } },
+      }),
+      prisma.emote.deleteMany({
+        where: { id: { in: uniqueToDelete } },
+      }),
+    ]);
     deleted = uniqueToDelete.length;
-    console.log(`[Emote] Deleted ${deleted} conflicting emote records and their usage data`);
+    console.log(`[Emote] Deleted ${deleted} conflicting emote records and their usage/profile data`);
   }
 
   if (toCreate.length > 0) {
