@@ -75,6 +75,32 @@ export class LeaderboardController {
     });
   }
 
+  async getTopSubscriptionGifters(req: Request, res: Response<ApiResponse>) {
+    const { page, limit } = parsePaginationQuery(req.query);
+    const timeRange = parseTimeRange(req.query);
+
+    const { gifters, total } = await leaderboardService.getTopSubscriptionGifters(page, limit, timeRange);
+
+    res.json({
+      success: true,
+      data: gifters,
+      pagination: createPaginationInfo(page, limit, total),
+    });
+  }
+
+  async getTopCheers(req: Request, res: Response<ApiResponse>) {
+    const { page, limit } = parsePaginationQuery(req.query);
+    const timeRange = parseTimeRange(req.query);
+
+    const { cheers, total } = await leaderboardService.getTopCheers(page, limit, timeRange);
+
+    res.json({
+      success: true,
+      data: cheers,
+      pagination: createPaginationInfo(page, limit, total),
+    });
+  }
+
   async getRewardLeaderboard(req: Request, res: Response<ApiResponse>) {
     const rewardId = parseInt(req.params.rewardId);
     if (isNaN(rewardId)) {

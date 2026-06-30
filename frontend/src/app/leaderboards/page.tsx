@@ -3,7 +3,16 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { LeaderboardSummary, LeaderboardUser, LeaderboardEmote, LeaderboardReward, RewardUserLeaderboard, TimeRange } from "@/types/api";
+import {
+  LeaderboardSummary,
+  LeaderboardUser,
+  LeaderboardEmote,
+  LeaderboardReward,
+  LeaderboardSubscriptionGift,
+  LeaderboardCheer,
+  RewardUserLeaderboard,
+  TimeRange,
+} from "@/types/api";
 import { apiClient } from "@/lib/api";
 import { formatDuration } from "@/lib/utils";
 
@@ -96,6 +105,38 @@ function RewardRow({ reward, rank }: { reward: LeaderboardReward; rank: number }
       <div className="text-right">
         <div className="text-white font-medium">{formatNumber(reward.totalRedemptions)}</div>
         <div className="text-gray-500 text-xs">redeems</div>
+      </div>
+    </div>
+  );
+}
+
+function GiftRow({ gifter, rank }: { gifter: LeaderboardSubscriptionGift; rank: number }) {
+  return (
+    <div className="flex items-center gap-3 py-2 border-b border-gray-700 last:border-0">
+      <span className="w-8 text-center text-lg">{getRankBadge(rank)}</span>
+      {gifter.avatar && <Image src={gifter.avatar} alt={gifter.displayName} width={32} height={32} className="rounded-full" />}
+      <div className="flex-1 min-w-0">
+        <div className="text-white font-medium truncate">{gifter.displayName}</div>
+      </div>
+      <div className="text-right">
+        <div className="text-white font-medium">{formatNumber(gifter.totalGiftedSubs)}</div>
+        <div className="text-gray-500 text-xs">gifts</div>
+      </div>
+    </div>
+  );
+}
+
+function CheerRow({ cheer, rank }: { cheer: LeaderboardCheer; rank: number }) {
+  return (
+    <div className="flex items-center gap-3 py-2 border-b border-gray-700 last:border-0">
+      <span className="w-8 text-center text-lg">{getRankBadge(rank)}</span>
+      {cheer.avatar && <Image src={cheer.avatar} alt={cheer.displayName} width={32} height={32} className="rounded-full" />}
+      <div className="flex-1 min-w-0">
+        <div className="text-white font-medium truncate">{cheer.displayName}</div>
+      </div>
+      <div className="text-right">
+        <div className="text-white font-medium">{formatNumber(cheer.totalBits)}</div>
+        <div className="text-gray-500 text-xs">bits</div>
       </div>
     </div>
   );
@@ -241,6 +282,24 @@ export default function LeaderboardsPage() {
                 <p className="text-gray-500 text-sm">No data yet</p>
               ) : (
                 summary.topRewards.map((reward, index) => <RewardRow key={reward.id} reward={reward} rank={index + 1} />)
+              )}
+            </LeaderboardCard>
+
+            {/* Top Gifted Subs */}
+            <LeaderboardCard title="Most Gifted Subs" icon="🎀" href={`/leaderboards/gifts?timeRange=${timeRange}`}>
+              {summary.topGiftedSubs.length === 0 ? (
+                <p className="text-gray-500 text-sm">No data yet</p>
+              ) : (
+                summary.topGiftedSubs.map((gifter, index) => <GiftRow key={gifter.id} gifter={gifter} rank={index + 1} />)
+              )}
+            </LeaderboardCard>
+
+            {/* Top Cheers */}
+            <LeaderboardCard title="Most Bits Cheered" icon="✨" href={`/leaderboards/cheers?timeRange=${timeRange}`}>
+              {summary.topCheers.length === 0 ? (
+                <p className="text-gray-500 text-sm">No data yet</p>
+              ) : (
+                summary.topCheers.map((cheer, index) => <CheerRow key={cheer.id} cheer={cheer} rank={index + 1} />)
               )}
             </LeaderboardCard>
           </div>

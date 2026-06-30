@@ -1,5 +1,14 @@
 import prisma from "../prismaClient";
-import { LeaderboardEmote, LeaderboardUser, LeaderboardReward, LeaderboardGame, RewardUserLeaderboard, LeaderboardSummary } from "../types/api.types";
+import {
+  LeaderboardCheer,
+  LeaderboardEmote,
+  LeaderboardUser,
+  LeaderboardReward,
+  LeaderboardGame,
+  LeaderboardSubscriptionGift,
+  RewardUserLeaderboard,
+  LeaderboardSummary,
+} from "../types/api.types";
 import { calculateOffset } from "../utils/pagination";
 
 export type TimeRange = "all" | "year" | "month" | "week";
@@ -23,12 +32,14 @@ function getDateFromRange(range: TimeRange): Date | null {
 export class LeaderboardService {
   // Get summary with top 3 of each category for main leaderboards page
   async getSummary(timeRange: TimeRange = "all"): Promise<LeaderboardSummary> {
-    const [topWatchtime, topMessages, topPointsSpent, topEmotesResult, topRewardsResult] = await Promise.all([
+    const [topWatchtime, topMessages, topPointsSpent, topEmotesResult, topRewardsResult, topGiftedSubsResult, topCheersResult] = await Promise.all([
       this.getTopUsers(1, 3, "watchtime", timeRange),
       this.getTopUsers(1, 3, "messages", timeRange),
       this.getTopUsers(1, 3, "points", timeRange),
       this.getTopEmotes(1, 3, timeRange),
       this.getTopRewards(1, 3, timeRange),
+      this.getTopSubscriptionGifters(1, 3, timeRange),
+      this.getTopCheers(1, 3, timeRange),
     ]);
 
     return {
@@ -37,6 +48,8 @@ export class LeaderboardService {
       topPointsSpent: topPointsSpent.users,
       topEmotes: topEmotesResult.emotes,
       topRewards: topRewardsResult.rewards,
+      topGiftedSubs: topGiftedSubsResult.gifters,
+      topCheers: topCheersResult.cheers,
     };
   }
 
@@ -399,6 +412,130 @@ export class LeaderboardService {
     const paginated = rewardsWithTotals.slice(offset, offset + limit);
 
     return { rewards: paginated, total };
+  }
+
+  async getTopSubscriptionGifters(
+    page: number,
+    limit: number,
+    timeRange: TimeRange = "all"
+  ): Promise<{ gifters: LeaderboardSubscriptionGift[]; total: number }> {
+    const startDate = getDateFromRange(timeRange);
+    const whereClause: any = {
+      userId: { not: null },
+    };
+    if (startDate) {
+      whereClause.timestamp = { gte: startDate };
+    }
+
+    const giftCounts = await prisma.subscriptionGift.groupBy({
+      by: ["userId"],
+      where: whereClause,
+      _sum: { amount: true },
+      _count: { id: true },
+      orderBy: { _sum: { amount: "desc" } },
+      skip: calculateOffset(page, limit),
+      take: limit,
+    });
+
+    const totalUsers = await prisma.subscriptionGift.groupBy({
+      by: ["userId"],
+      where: whereClause,
+    });
+
+    const userIds = giftCounts.map((gift) => gift.userId).filter((userId): userId is number => userId !== null);
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: {
+        id: true,
+        twitchId: true,
+        login: true,
+        displayName: true,
+        avatar: true,
+      },
+    });
+
+    const userMap = new Map(users.map((user) => [user.id, user]));
+
+    return {
+      gifters: giftCounts
+        .map((gift) => {
+          if (gift.userId === null) return null;
+          const user = userMap.get(gift.userId);
+          if (!user) return null;
+
+          return {
+            id: user.id,
+            twitchId: user.twitchId,
+            login: user.login,
+            displayName: user.displayName,
+            avatar: user.avatar,
+            totalGiftedSubs: gift._sum.amount || 0,
+            giftEvents: gift._count.id,
+          };
+        })
+        .filter((gift): gift is LeaderboardSubscriptionGift => gift !== null),
+      total: totalUsers.length,
+    };
+  }
+
+  async getTopCheers(page: number, limit: number, timeRange: TimeRange = "all"): Promise<{ cheers: LeaderboardCheer[]; total: number }> {
+    const startDate = getDateFromRange(timeRange);
+    const whereClause: any = {
+      userId: { not: null },
+    };
+    if (startDate) {
+      whereClause.timestamp = { gte: startDate };
+    }
+
+    const cheerCounts = await prisma.cheer.groupBy({
+      by: ["userId"],
+      where: whereClause,
+      _sum: { bits: true },
+      _count: { id: true },
+      orderBy: { _sum: { bits: "desc" } },
+      skip: calculateOffset(page, limit),
+      take: limit,
+    });
+
+    const totalUsers = await prisma.cheer.groupBy({
+      by: ["userId"],
+      where: whereClause,
+    });
+
+    const userIds = cheerCounts.map((cheer) => cheer.userId).filter((userId): userId is number => userId !== null);
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: {
+        id: true,
+        twitchId: true,
+        login: true,
+        displayName: true,
+        avatar: true,
+      },
+    });
+
+    const userMap = new Map(users.map((user) => [user.id, user]));
+
+    return {
+      cheers: cheerCounts
+        .map((cheer) => {
+          if (cheer.userId === null) return null;
+          const user = userMap.get(cheer.userId);
+          if (!user) return null;
+
+          return {
+            id: user.id,
+            twitchId: user.twitchId,
+            login: user.login,
+            displayName: user.displayName,
+            avatar: user.avatar,
+            totalBits: cheer._sum.bits || 0,
+            cheerCount: cheer._count.id,
+          };
+        })
+        .filter((cheer): cheer is LeaderboardCheer => cheer !== null),
+      total: totalUsers.length,
+    };
   }
 
   // Get leaderboard for a specific reward (who redeemed it most)

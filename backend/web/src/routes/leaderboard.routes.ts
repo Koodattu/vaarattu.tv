@@ -24,6 +24,14 @@ router.get("/users", asyncHandler(leaderboardController.getTopUsers.bind(leaderb
 // Query params: page, limit, timeRange
 router.get("/rewards", asyncHandler(leaderboardController.getTopRewards.bind(leaderboardController)));
 
+// GET /api/leaderboards/gifts - Top gifted subscription gifters
+// Query params: page, limit, timeRange
+router.get("/gifts", asyncHandler(leaderboardController.getTopSubscriptionGifters.bind(leaderboardController)));
+
+// GET /api/leaderboards/cheers - Top cheerers by bits
+// Query params: page, limit, timeRange
+router.get("/cheers", asyncHandler(leaderboardController.getTopCheers.bind(leaderboardController)));
+
 // GET /api/leaderboards/rewards/all - All rewards with their top redeemers
 // Query params: timeRange
 router.get("/rewards/all", asyncHandler(leaderboardController.getAllRewardLeaderboards.bind(leaderboardController)));

@@ -49,6 +49,26 @@ export interface LeaderboardReward {
   totalPointsSpent: number;
 }
 
+export interface LeaderboardSubscriptionGift {
+  id: number;
+  twitchId: string;
+  login: string;
+  displayName: string;
+  avatar: string | null;
+  totalGiftedSubs: number;
+  giftEvents: number;
+}
+
+export interface LeaderboardCheer {
+  id: number;
+  twitchId: string;
+  login: string;
+  displayName: string;
+  avatar: string | null;
+  totalBits: number;
+  cheerCount: number;
+}
+
 export interface LeaderboardGame {
   id: number;
   twitchId: string;
@@ -86,6 +106,8 @@ export interface LeaderboardSummary {
   topPointsSpent: LeaderboardUser[];
   topEmotes: LeaderboardEmote[];
   topRewards: LeaderboardReward[];
+  topGiftedSubs: LeaderboardSubscriptionGift[];
+  topCheers: LeaderboardCheer[];
 }
 
 // User types

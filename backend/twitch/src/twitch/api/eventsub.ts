@@ -4,7 +4,8 @@ import { getStreamerAuthProvider, getUserId } from "../auth/authProviders";
 import { processStreamOnlineEvent, processStreamOfflineEvent, processChannelUpdateEvent } from "../../services/stream.service";
 import { processChatMessageEvent } from "../../services/chatMessage.service";
 import { processChannelRedemptionEvent } from "../../services/channelRedemption.service";
-import { processSubscriptionEndEvent, processSubscriptionEvent } from "../../services/twitchProfile.service";
+import { processCheerEvent, processSubscriptionGiftEvent } from "../../services/supportEvent.service";
+import { processFollowEvent, processSubscriptionEndEvent, processSubscriptionEvent, processSubscriptionStartEvent } from "../../services/twitchProfile.service";
 
 export async function startEventSubWs() {
   const authProvider = await getStreamerAuthProvider();
@@ -55,24 +56,34 @@ export async function startEventSubWs() {
   // Listen for channel point redemptions
   listener.onChannelRedemptionAdd(streamerChannel, async (event) => {
     try {
-      console.log("[EventSub] Channel Point Redemption:", event);
+      console.log(`[EventSub] Channel point redemption received from ${event.userName} (${event.userId}), reward ${event.rewardTitle} (${event.rewardId})`);
       await processChannelRedemptionEvent(event);
     } catch (err) {
       console.error("[EventSub] Failed to process channel point redemption:", err);
     }
   });
 
-  listener.onChannelFollow(streamerChannel, streamerChannel, (event) => {
-    console.log("[EventSub] Follow:", event);
+  listener.onChannelFollow(streamerChannel, streamerChannel, async (event) => {
+    try {
+      console.log(`[EventSub] Follow event received for ${event.userName} (${event.userId}) at ${event.followDate.toISOString()}`);
+      await processFollowEvent(event);
+    } catch (err) {
+      console.error("[EventSub] Failed to process follow:", err);
+    }
   });
 
-  listener.onChannelSubscription(streamerChannel, (event) => {
-    console.log("[EventSub] Subscription:", event);
+  listener.onChannelSubscription(streamerChannel, async (event) => {
+    try {
+      console.log(`[EventSub] Subscription event received for ${event.userName} (${event.userId}), tier ${event.tier}, gifted: ${event.isGift}`);
+      await processSubscriptionStartEvent(event);
+    } catch (err) {
+      console.error("[EventSub] Failed to process subscription:", err);
+    }
   });
 
   listener.onChannelSubscriptionMessage(streamerChannel, async (event) => {
     try {
-      console.log("[EventSub] Subscription Message:", event);
+      console.log(`[EventSub] Subscription message received from ${event.userName} (${event.userId}), tier ${event.tier}, months ${event.cumulativeMonths}`);
       await processSubscriptionEvent(event);
     } catch (err) {
       console.error("[EventSub] Failed to process subscription message:", err);
@@ -88,16 +99,26 @@ export async function startEventSubWs() {
     }
   });
 
-  listener.onChannelSubscriptionGift(streamerChannel, (event) => {
-    console.log("[EventSub] Subscription Gift:", event);
+  listener.onChannelSubscriptionGift(streamerChannel, async (event) => {
+    try {
+      console.log(`[EventSub] Subscription gift event received from ${event.gifterName ?? "anonymous"}, amount ${event.amount}, tier ${event.tier}`);
+      await processSubscriptionGiftEvent(event);
+    } catch (err) {
+      console.error("[EventSub] Failed to process subscription gift:", err);
+    }
   });
 
-  listener.onChannelCheer(streamerChannel, (event) => {
-    console.log("[EventSub] Cheer:", event);
+  listener.onChannelCheer(streamerChannel, async (event) => {
+    try {
+      console.log(`[EventSub] Cheer event received from ${event.userName ?? "anonymous"}, bits ${event.bits}`);
+      await processCheerEvent(event);
+    } catch (err) {
+      console.error("[EventSub] Failed to process cheer:", err);
+    }
   });
 
   listener.onChannelRaidTo(streamerChannel, (event) => {
-    console.log("[EventSub] Raid:", event);
+    console.log(`[EventSub] Raid event received to ${event.raidedBroadcasterName} (${event.raidedBroadcasterId}) with ${event.viewers} viewers`);
   });
 
   await listener.start();

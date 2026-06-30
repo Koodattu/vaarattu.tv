@@ -18,6 +18,8 @@ model User {
   // Relations to other models
   messages     Message[]
   redemptions  Redemption[]
+  subscriptionGifts SubscriptionGift[]
+  cheers       Cheer[]
   viewSessions ViewSession[]
   nameHistory  NameHistory[]
   emoteUsages  EmoteUsage[]
@@ -108,6 +110,35 @@ model Redemption {
   channelReward ChannelReward @relation(fields: [rewardId], references: [twitchId])
   timestamp DateTime
   customText String?
+}
+
+model SubscriptionGift {
+  id               Int      @id @default(autoincrement())
+  userId           Int?
+  user             User?    @relation(fields: [userId], references: [id])
+  amount           Int
+  cumulativeAmount Int?
+  tier             String   // "1000", "2000", "3000"
+  isAnonymous      Boolean  @default(false)
+  timestamp        DateTime @default(now())
+
+  @@index([userId])
+  @@index([timestamp])
+  @@index([userId, timestamp])
+}
+
+model Cheer {
+  id          Int      @id @default(autoincrement())
+  userId      Int?
+  user        User?    @relation(fields: [userId], references: [id])
+  bits        Int
+  message     String?
+  isAnonymous Boolean  @default(false)
+  timestamp   DateTime @default(now())
+
+  @@index([userId])
+  @@index([timestamp])
+  @@index([userId, timestamp])
 }
 
 

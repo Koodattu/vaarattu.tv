@@ -7,6 +7,8 @@ import {
   LeaderboardUser,
   LeaderboardEmote,
   LeaderboardReward,
+  LeaderboardSubscriptionGift,
+  LeaderboardCheer,
   LeaderboardGame,
   RewardUserLeaderboard,
   TimeRange,
@@ -79,6 +81,14 @@ class ApiClient {
 
   async getTopRewards(timeRange: TimeRange = "all", page: number = 1, limit: number = 20): Promise<ApiResponse<LeaderboardReward[]>> {
     return this.fetchApi<LeaderboardReward[]>(`/api/leaderboards/rewards?page=${page}&limit=${limit}&timeRange=${timeRange}`);
+  }
+
+  async getTopGiftedSubs(timeRange: TimeRange = "all", page: number = 1, limit: number = 20): Promise<ApiResponse<LeaderboardSubscriptionGift[]>> {
+    return this.fetchApi<LeaderboardSubscriptionGift[]>(`/api/leaderboards/gifts?page=${page}&limit=${limit}&timeRange=${timeRange}`);
+  }
+
+  async getTopCheers(timeRange: TimeRange = "all", page: number = 1, limit: number = 20): Promise<ApiResponse<LeaderboardCheer[]>> {
+    return this.fetchApi<LeaderboardCheer[]>(`/api/leaderboards/cheers?page=${page}&limit=${limit}&timeRange=${timeRange}`);
   }
 
   async getRewardLeaderboard(rewardId: string, timeRange: TimeRange = "all", page: number = 1, limit: number = 20): Promise<ApiResponse<RewardUserLeaderboard>> {

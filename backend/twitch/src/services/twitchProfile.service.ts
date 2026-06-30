@@ -2,7 +2,12 @@ import prisma from "../prismaClient";
 import { HelixUser } from "@twurple/api";
 import { getUserId } from "../twitch/auth/authProviders";
 import { getUserInfoById, isUserVip, isUserModerator } from "../twitch/api/twitchApi";
-import { EventSubChannelSubscriptionEndEvent, EventSubChannelSubscriptionMessageEvent } from "@twurple/eventsub-base";
+import {
+  EventSubChannelFollowEvent,
+  EventSubChannelSubscriptionEndEvent,
+  EventSubChannelSubscriptionEvent,
+  EventSubChannelSubscriptionMessageEvent,
+} from "@twurple/eventsub-base";
 import { upsertUserFromTwitch } from "./user.service";
 
 /**
@@ -77,6 +82,65 @@ async function getTwitchProfileIfFresh(userId: number): Promise<{ profile: any; 
   const isFresh = now - updated < 24 * 60 * 60 * 1000;
 
   return { profile, isFresh };
+}
+
+export async function processFollowEvent(event: EventSubChannelFollowEvent) {
+  const user = await upsertUserFromTwitch(event.userName);
+  if (!user) {
+    console.warn(`[processFollowEvent] User not found, unable to process follow: ${event.userName}`);
+    return;
+  }
+
+  try {
+    await prisma.twitchProfile.upsert({
+      where: { userId: user.id },
+      update: {
+        isFollowing: true,
+        followedSince: event.followDate,
+        lastUpdated: new Date(),
+      },
+      create: {
+        userId: user.id,
+        isFollowing: true,
+        followedSince: event.followDate,
+        lastUpdated: new Date(),
+      },
+    });
+
+    console.log(`[processFollowEvent] Updated follow status for ${event.userName} from ${event.followDate.toISOString()}`);
+  } catch (error) {
+    console.error(`[processFollowEvent] Error updating follow for ${event.userName}:`, error);
+  }
+}
+
+export async function processSubscriptionStartEvent(event: EventSubChannelSubscriptionEvent) {
+  const user = await upsertUserFromTwitch(event.userName);
+  if (!user) {
+    console.warn(`[processSubscriptionStartEvent] User not found, unable to process subscription: ${event.userName}`);
+    return;
+  }
+
+  try {
+    await prisma.twitchProfile.upsert({
+      where: { userId: user.id },
+      update: {
+        isSubscribed: true,
+        subscriptionTier: event.tier,
+        lastUpdated: new Date(),
+      },
+      create: {
+        userId: user.id,
+        isSubscribed: true,
+        subscriptionTier: event.tier,
+        subscriptionMonths: 1,
+        lastUpdated: new Date(),
+      },
+    });
+
+    console.log(`[processSubscriptionStartEvent] Updated subscription for ${event.userName}: Tier ${event.tier}, gifted: ${event.isGift}`);
+  } catch (error) {
+    console.error(`[processSubscriptionStartEvent] Error updating subscription for ${event.userName}:`, error);
+  }
 }
 
 export async function processSubscriptionEvent(event: EventSubChannelSubscriptionMessageEvent) {
