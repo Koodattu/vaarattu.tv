@@ -2,7 +2,7 @@ import prisma from "../prismaClient";
 import { HelixUser } from "@twurple/api";
 import { getUserId } from "../twitch/auth/authProviders";
 import { getUserInfoById, isUserVip, isUserModerator } from "../twitch/api/twitchApi";
-import { EventSubChannelSubscriptionMessageEvent } from "@twurple/eventsub-base";
+import { EventSubChannelSubscriptionEndEvent, EventSubChannelSubscriptionMessageEvent } from "@twurple/eventsub-base";
 import { upsertUserFromTwitch } from "./user.service";
 
 /**
@@ -108,5 +108,37 @@ export async function processSubscriptionEvent(event: EventSubChannelSubscriptio
     console.log(`[processSubscriptionEvent] Updated subscription for ${event.userName}: Tier ${event.tier}, ${event.cumulativeMonths} months`);
   } catch (error) {
     console.error(`[processSubscriptionEvent] Error updating subscription for ${event.userName}:`, error);
+  }
+}
+
+export async function processSubscriptionEndEvent(event: EventSubChannelSubscriptionEndEvent) {
+  const user = await prisma.user.findUnique({
+    where: { twitchId: event.userId },
+    select: { id: true, login: true },
+  });
+
+  if (!user) {
+    console.log(`[processSubscriptionEndEvent] User not found, skipping subscription end for ${event.userName} (${event.userId})`);
+    return;
+  }
+
+  try {
+    const result = await prisma.twitchProfile.updateMany({
+      where: { userId: user.id },
+      data: {
+        isSubscribed: false,
+        subscriptionTier: null,
+        lastUpdated: new Date(),
+      },
+    });
+
+    if (result.count === 0) {
+      console.warn(`[processSubscriptionEndEvent] TwitchProfile not found for ${user.login} (${event.userId}), nothing to clear`);
+      return;
+    }
+
+    console.log(`[processSubscriptionEndEvent] Cleared subscription for ${user.login}: Tier ${event.tier}, gifted: ${event.isGift}`);
+  } catch (error) {
+    console.error(`[processSubscriptionEndEvent] Error clearing subscription for ${event.userName}:`, error);
   }
 }
