@@ -77,7 +77,8 @@ export async function generateOrUpdateAISummary(
     userPrompt += `MUISTUTUS: Kirjoita satiirinen henkilökuva. ÄLÄ lainaa viestejä. Keskity persoonallisuuteen ja hauskaan kuvaukseen.`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5.6-luna",
+      reasoning_effort: "low",
       messages: [
         {
           role: "system",
@@ -88,11 +89,17 @@ export async function generateOrUpdateAISummary(
           content: userPrompt,
         },
       ],
-      max_tokens: 1000, // Concise but room for good content
-      temperature: 0.7, // Creative but more consistent
+      max_completion_tokens: 4000, // Includes reasoning tokens and the profile text
     });
 
-    const aiSummary = completion.choices[0]?.message?.content?.trim();
+    const choice = completion.choices[0];
+
+    if (choice?.finish_reason !== "stop" || choice.message.refusal) {
+      console.error("[OpenAI] Profile generation did not complete successfully");
+      return null;
+    }
+
+    const aiSummary = choice.message.content?.trim();
 
     if (!aiSummary) {
       console.error("[OpenAI] No content returned from OpenAI");
@@ -131,15 +138,22 @@ export async function testOpenAIConnection(): Promise<boolean> {
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5.6-luna",
+      reasoning_effort: "low",
       messages: [
         {
           role: "user",
-          content: "Test message",
+          content: "Reply with exactly OK.",
         },
       ],
-      max_tokens: 5,
+      max_completion_tokens: 128,
     });
+
+    const choice = completion.choices[0];
+    if (choice?.finish_reason !== "stop" || choice.message.refusal || choice.message.content?.trim() !== "OK") {
+      console.error("[OpenAI] Connection test did not return the expected response");
+      return false;
+    }
 
     console.log("[OpenAI] Connection test successful");
     return true;

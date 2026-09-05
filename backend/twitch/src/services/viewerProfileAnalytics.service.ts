@@ -398,7 +398,7 @@ async function checkAndUpdateAISummary(userId: number): Promise<void> {
       await prisma.viewerProfile.update({
         where: { userId },
         data: {
-          aiSummary: aiSummary,
+          aiSummary: aiSummary ?? profile.aiSummary,
           aiSummaryGeneratedAtMessages: profile.totalMessages,
           aiSummaryLastUpdate: new Date(),
         },

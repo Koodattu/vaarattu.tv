@@ -118,7 +118,7 @@ vaarattu.tv/
 
 ### AI-Powered Personalities
 
-Using GPT-4o-mini, the system generates humorous, Wikipedia-style profiles that update every 100 messages. These aren't just stats — they're satirical biographies that capture each viewer's unique personality and chat style. Written in Finnish with comedic exaggeration.
+Using GPT-5.6 Luna with low reasoning effort, the system generates humorous, Wikipedia-style profiles that update every 100 messages. These aren't just stats — they're satirical biographies that capture each viewer's unique personality and chat style. Written in Finnish with comedic exaggeration.
 
 ### Comprehensive Session Tracking
 
