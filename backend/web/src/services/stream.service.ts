@@ -1,8 +1,35 @@
 import prisma from "../prismaClient";
 import { StreamListItem, StreamDetail, StreamTimeline } from "../types/api.types";
 import { calculateOffset } from "../utils/pagination";
+import { ActivityMinute, buildStreamActivity } from "../utils/streamActivity";
 
 export class StreamService {
+  async getStreamActivity(streamId: number) {
+    const stream = await prisma.stream.findUnique({
+      where: { id: streamId },
+      select: { startTime: true, endTime: true },
+    });
+    if (!stream) return null;
+
+    const endTime = stream.endTime ?? new Date();
+    const [sessions, minutes] = await Promise.all([
+      prisma.viewSession.findMany({
+        where: { streamId },
+        select: { userId: true, sessionStart: true, sessionEnd: true },
+      }),
+      prisma.$queryRaw<ActivityMinute[]>`
+        SELECT FLOOR(EXTRACT(EPOCH FROM ("timestamp" - ${stream.startTime}::timestamp)) / 60)::int AS minute,
+               COUNT(*)::int AS messages, COUNT(DISTINCT "userId")::int AS chatters
+        FROM "Message"
+        WHERE "streamId" = ${streamId}
+          AND "timestamp" >= ${stream.startTime} AND "timestamp" < ${endTime}
+        GROUP BY 1
+        ORDER BY 1
+      `,
+    ]);
+    return buildStreamActivity(stream.startTime, endTime, sessions, minutes);
+  }
+
   async getStreams(page: number, limit: number): Promise<{ streams: StreamListItem[]; total: number }> {
     const offset = calculateOffset(page, limit);
 

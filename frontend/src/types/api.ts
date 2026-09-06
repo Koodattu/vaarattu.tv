@@ -55,6 +55,17 @@ export interface StreamDetail {
   }>;
 }
 
+export interface StreamActivity {
+  intervalMinutes: number;
+  points: Array<{
+    time: string;
+    endTime: string;
+    viewers: number | null;
+    messagesPerMinute: number;
+    activeChatters: number;
+  }>;
+}
+
 export interface StreamTimeline {
   id: number;
   twitchId: string;

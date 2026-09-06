@@ -2,6 +2,7 @@ import {
   ApiResponse,
   StreamListItem,
   StreamDetail,
+  StreamActivity,
   StreamTimeline,
   LeaderboardSummary,
   LeaderboardUser,
@@ -49,6 +50,10 @@ class ApiClient {
 
   async getStream(streamId: number): Promise<ApiResponse<StreamDetail>> {
     return this.fetchApi<StreamDetail>(`/api/streams/${streamId}`);
+  }
+
+  async getStreamActivity(streamId: number): Promise<ApiResponse<StreamActivity>> {
+    return this.fetchApi<StreamActivity>(`/api/streams/${streamId}/activity`);
   }
 
   async getStreamTimeline(streamId: number): Promise<ApiResponse<StreamTimeline>> {

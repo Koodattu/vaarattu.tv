@@ -6,6 +6,18 @@ import { parsePaginationQuery, createPaginationInfo } from "../utils/pagination"
 const streamService = new StreamService();
 
 export class StreamController {
+  async getStreamActivity(req: Request, res: Response<ApiResponse>) {
+    const streamId = Number(req.params.id);
+    if (!Number.isSafeInteger(streamId) || streamId <= 0 || streamId > 2147483647) {
+      return res.status(400).json({ success: false, error: "Invalid stream ID" });
+    }
+    const activity = await streamService.getStreamActivity(streamId);
+    if (!activity) {
+      return res.status(404).json({ success: false, error: "Stream not found" });
+    }
+    res.json({ success: true, data: activity });
+  }
+
   async getStreams(req: Request, res: Response<ApiResponse>) {
     const { page, limit } = parsePaginationQuery(req.query);
 

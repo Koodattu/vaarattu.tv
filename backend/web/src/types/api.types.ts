@@ -6,6 +6,17 @@ export interface ApiResponse<T = any> {
   pagination?: PaginationInfo;
 }
 
+export interface StreamActivity {
+  intervalMinutes: number;
+  points: Array<{
+    time: string;
+    endTime: string;
+    viewers: number | null;
+    messagesPerMinute: number;
+    activeChatters: number;
+  }>;
+}
+
 export interface PaginationInfo {
   page: number;
   limit: number;

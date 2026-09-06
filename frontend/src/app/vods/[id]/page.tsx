@@ -6,6 +6,7 @@ import Image from "next/image";
 import { StreamDetail } from "@/types/api";
 import { apiClient } from "@/lib/api";
 import { formatDate, formatDuration, formatRelativeTime } from "@/lib/utils";
+import { StreamActivityChart } from "./activity-chart";
 
 interface VodDetailPageProps {
   params: Promise<{ id: string }>;
@@ -16,11 +17,6 @@ export default function VodDetailPage({ params }: VodDetailPageProps) {
   const [vod, setVod] = useState<StreamDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [parentDomain, setParentDomain] = useState<string>("");
-
-  useEffect(() => {
-    setParentDomain(window.location.hostname);
-  }, []);
 
   useEffect(() => {
     const fetchVod = async () => {
@@ -74,9 +70,6 @@ export default function VodDetailPage({ params }: VodDetailPageProps) {
   const firstSegment = vod.segments[0];
   const uniqueGames = [...new Set(vod.segments.map((s) => s.gameName))];
 
-  // Twitch VOD embed URL
-  const vodEmbedUrl = parentDomain ? `https://player.twitch.tv/?video=${vod.twitchId}&parent=${parentDomain}&autoplay=false` : null;
-
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
@@ -93,12 +86,20 @@ export default function VodDetailPage({ params }: VodDetailPageProps) {
               <span>{formatRelativeTime(vod.startTime)}</span>
               {vod.duration && <span className="text-purple-400">{formatDuration(vod.duration)}</span>}
             </div>
-            <Link
-              href={`/vods/${vod.id}/timeline`}
-              className="mt-4 inline-block px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-sm font-medium transition-colors"
-            >
-              View Timeline
-            </Link>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Link
+                href={`/vods/${vod.id}/watch`}
+                className="inline-block px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-sm font-medium transition-colors"
+              >
+                Watch VOD
+              </Link>
+              <Link
+                href={`/vods/${vod.id}/timeline`}
+                className="inline-block px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white rounded-md text-sm font-medium transition-colors"
+              >
+                View Timeline
+              </Link>
+            </div>
           </div>
 
           {/* Stats */}
@@ -119,14 +120,7 @@ export default function VodDetailPage({ params }: VodDetailPageProps) {
         </div>
       </div>
 
-      {/* VOD Embed */}
-      {vodEmbedUrl && (
-        <div className="mb-8">
-          <div className="aspect-video bg-gray-800 rounded-lg overflow-hidden">
-            <iframe src={vodEmbedUrl} width="100%" height="100%" allowFullScreen title="VOD Player" />
-          </div>
-        </div>
-      )}
+      <StreamActivityChart key={vod.id} streamId={vod.id} />
 
       {/* Games played */}
       <div className="mb-8">
