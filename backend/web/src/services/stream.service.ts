@@ -22,12 +22,15 @@ export class StreamService {
         where: { streamId },
         select: { userId: true, sessionStart: true, sessionEnd: true },
       }),
+      // These columns store UTC without a timezone. Bind UTC text so Prisma's
+      // timestamptz Date parameters cannot introduce the database session's offset.
       prisma.$queryRaw<ActivityMinute[]>`
-        SELECT FLOOR(EXTRACT(EPOCH FROM ("timestamp" - ${stream.startTime}::timestamp)) / 60)::int AS minute,
+        SELECT FLOOR(EXTRACT(EPOCH FROM ("timestamp" - ${stream.startTime.toISOString()}::timestamp)) / 60)::int AS minute,
                COUNT(*)::int AS messages, COUNT(DISTINCT "userId")::int AS chatters
         FROM "Message"
         WHERE "streamId" = ${streamId}
-          AND "timestamp" >= ${stream.startTime} AND "timestamp" < ${endTime}
+          AND "timestamp" >= ${stream.startTime.toISOString()}::timestamp
+          AND "timestamp" < ${endTime.toISOString()}::timestamp
         GROUP BY 1
         ORDER BY 1
       `,

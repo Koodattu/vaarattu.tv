@@ -14,3 +14,5 @@ Focused checks:
 
 - `backend/twitch`: `node --require ts-node/register --test tests/streamMetadata.service.test.cjs`
 - `backend/web`: `node --test tests/streamActivity.test.cjs`
+
+The activity query also has a PostgreSQL integration regression test. With the disposable localhost database described in `youtube-recordings.md` running and migrated, set `VOD_TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:55489/postgres` and run `node --test tests/streamActivity.integration.test.cjs` from `backend/web`. It checks UTC, Helsinki, and New York in summer and winter, including hour boundaries, partial intervals, ongoing streams, and preservation of message totals. Each fixture transaction is rolled back. Raw activity queries must treat the database's timezone-less timestamps as UTC; binding JavaScript Dates as `timestamptz` and casting in the session timezone shifts chat into the wrong intervals.
