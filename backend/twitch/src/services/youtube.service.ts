@@ -7,7 +7,10 @@ interface Channel { id: string; contentDetails: { relatedPlaylists: { uploads: s
 interface PlaylistItem { contentDetails: { videoId: string } }
 interface Video {
   id: string;
-  snippet: { title: string; channelId: string; liveBroadcastContent: string };
+  snippet: {
+    title: string; channelId: string; liveBroadcastContent: string;
+    thumbnails?: Partial<Record<"default" | "medium" | "high" | "standard" | "maxres", { url: string }>>;
+  };
   contentDetails: { duration: string };
   status: { embeddable: boolean; privacyStatus: string; uploadStatus: string };
 }
@@ -73,8 +76,10 @@ export async function fetchYoutubeCatalog() {
     const page = await youtubeRequest<Video>("videos", { part: "snippet,contentDetails,status", id: allIds.slice(offset, offset + 50).join(",") });
     for (const video of page.items) {
       if (video.snippet.channelId !== channelId) throw new Error("YouTube returned a video belonging to another channel.");
+      const thumbnails = video.snippet.thumbnails;
       videos.push({
         id: video.id, channelId, title: video.snippet.title,
+        thumbnailUrl: thumbnails?.maxres?.url || thumbnails?.standard?.url || thumbnails?.high?.url || thumbnails?.medium?.url || thumbnails?.default?.url || null,
         durationSeconds: durationSeconds(video.contentDetails.duration),
         available: video.status.embeddable && video.status.privacyStatus === "public" && video.status.uploadStatus === "processed" && video.snippet.liveBroadcastContent === "none",
       });

@@ -22,6 +22,12 @@ Enable YouTube Data API v3 for the key. Never put it in `NEXT_PUBLIC_*` variable
 
 A key may serve both this project and niilo22, subject to its restrictions and shared Google project quota. A full 776-video scan takes approximately 33 requests: one channel lookup, 16 playlist pages and 16 video-detail batches.
 
+## VOD thumbnails
+
+The VOD grid uses the first available linked YouTube recording's thumbnail, falling back to the saved Twitch thumbnail. The YouTube catalog sync saves the best available thumbnail URL from `snippet.thumbnails`; the Twitch archive sync replaces live preview URLs with 640×360 archive thumbnail URLs. Images load directly from the providers, with a placeholder if a URL is missing or fails to load. Image files are not downloaded or permanently archived.
+
+Apply `backend/shared/prisma/migrations/20260906160000_youtube_thumbnails/migration.sql` through the existing Prisma migration workflow and regenerate the Prisma client before running the updated backends. Existing YouTube rows receive thumbnails on the next successful catalog sync (or `npm run recordings -- sync --catalog-only`); existing Twitch archives receive them on the next archive sync. Thumbnails for expired or deleted recordings may no longer be available.
+
 ## Matching and review
 
 Matching compares all recorded segment titles with normalized YouTube titles. It removes URLs and punctuation, preserves Finnish letters and distinguishing numbers, tolerates small spelling/spacing changes, and recognizes `part`, `pt` and `osa` markers. Valid leading `D.M.YYYY` dates are treated as original broadcast dates in Europe/Helsinki. Upload/publication dates are never used.

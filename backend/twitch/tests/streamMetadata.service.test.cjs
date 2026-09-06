@@ -18,22 +18,22 @@ test("links archives by exact stream ID, keeps the newest match, and skips uncha
       assert.equal(id, "channel-1");
       assert.deepEqual(options, { type: "archive", orderBy: "time" });
       return { getAll: async () => [
-        { id: "video-new", streamId: "stream-1" },
+        { id: "video-new", streamId: "stream-1", getThumbnailUrl: (width, height) => `https://static-cdn.jtvnw.net/new-${width}x${height}.jpg` },
         { id: "video-old", streamId: "stream-1" },
-        { id: "video-2", streamId: "stream-2" },
+        { id: "video-2", streamId: "stream-2", getThumbnailUrl: () => "saved-thumbnail" },
         { id: "highlight", streamId: null },
       ] };
     },
   } }));
   t.mock.method(prisma.stream, "findMany", async (query) => {
     assert.deepEqual(query.where.twitchId.in, ["stream-1", "stream-2"]);
-    return [{ id: 1, twitchId: "stream-1", twitchVideoId: null }, { id: 2, twitchId: "stream-2", twitchVideoId: "video-2" }];
+    return [{ id: 1, twitchId: "stream-1", twitchVideoId: null, thumbnailUrl: "live-preview" }, { id: 2, twitchId: "stream-2", twitchVideoId: "video-2", thumbnailUrl: "saved-thumbnail" }];
   });
   const update = t.mock.method(prisma.stream, "update", async () => ({}));
   const availability = t.mock.method(prisma.stream, "updateMany", async () => ({ count: 1 }));
   await syncStreamVideoIds("channel-1");
   assert.equal(update.mock.callCount(), 1);
-  assert.deepEqual(update.mock.calls[0].arguments[0], { where: { id: 1 }, data: { twitchVideoId: "video-new" } });
+  assert.deepEqual(update.mock.calls[0].arguments[0], { where: { id: 1 }, data: { twitchVideoId: "video-new", thumbnailUrl: "https://static-cdn.jtvnw.net/new-640x360.jpg" } });
   assert.equal(availability.mock.callCount(), 2);
   assert.equal(availability.mock.calls[0].arguments[0].data.twitchVideoAvailable, true);
   assert.deepEqual(availability.mock.calls[1].arguments[0].where.twitchVideoId.notIn, ["video-new", "video-old", "video-2", "highlight"]);
@@ -60,9 +60,24 @@ test("empty or failed archive responses do not erase saved IDs, and later runs r
   assert.equal(update.mock.callCount(), 0);
   assert.equal(availability.mock.callCount(), 2, "failed API requests must not change availability");
   fail = false;
-  response = [{ id: "video-1", streamId: "stream-1" }];
+  response = [{ id: "video-1", streamId: "stream-1", getThumbnailUrl: () => "archive-thumbnail" }];
   await syncStreamVideoIds("channel-1");
   assert.equal(update.mock.callCount(), 1);
+});
+
+test("refreshes thumbnails for already linked archives and preserves them when Twitch returns no image", async (t) => {
+  let thumbnail = "new-thumbnail";
+  t.mock.method(twitchApi, "getTwitchApiClientWithStreamer", async () => ({ videos: {
+    getVideosByUserPaginated: () => ({ getAll: async () => [{ id: "video-1", streamId: "stream-1", getThumbnailUrl: () => thumbnail }] }),
+  } }));
+  t.mock.method(prisma.stream, "findMany", async () => [{ id: 1, twitchId: "stream-1", twitchVideoId: "video-1", thumbnailUrl: "old-thumbnail" }]);
+  const update = t.mock.method(prisma.stream, "update", async () => ({}));
+  t.mock.method(prisma.stream, "updateMany", async () => ({ count: 1 }));
+  await syncStreamVideoIds("channel-1");
+  assert.equal(update.mock.calls[0].arguments[0].data.thumbnailUrl, "new-thumbnail");
+  thumbnail = "";
+  await syncStreamVideoIds("channel-1");
+  assert.equal(update.mock.callCount(), 1, "an empty thumbnail must not erase the saved image");
 });
 
 test("records the actual audience, including zero, against the matching stream", async (t) => {

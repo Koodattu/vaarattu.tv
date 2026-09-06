@@ -168,6 +168,7 @@ model YouTubeVideo {
   id String @id
   channelId String
   title String
+  thumbnailUrl String?
   durationSeconds Int
   available Boolean @default(true)
   checkedAt DateTime

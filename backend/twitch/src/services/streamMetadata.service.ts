@@ -5,19 +5,20 @@ import { getTwitchApiClientWithStreamer } from "../twitch/api/twitchApi";
 export async function syncStreamVideoIds(broadcasterId: string): Promise<void> {
   const api = await getTwitchApiClientWithStreamer();
   const videos = await api.videos.getVideosByUserPaginated(broadcasterId, { type: "archive", orderBy: "time" }).getAll();
-  const videoIds = new Map<string, string>();
+  const videoIds = new Map<string, { id: string; thumbnailUrl: string }>();
   for (const video of videos) {
-    if (video.streamId && !videoIds.has(video.streamId)) videoIds.set(video.streamId, video.id);
+    if (video.streamId && !videoIds.has(video.streamId)) videoIds.set(video.streamId, { id: video.id, thumbnailUrl: video.getThumbnailUrl(640, 360) });
   }
 
   const streams = videoIds.size ? await prisma.stream.findMany({
     where: { twitchId: { in: [...videoIds.keys()] } },
-    select: { id: true, twitchId: true, twitchVideoId: true },
+    select: { id: true, twitchId: true, twitchVideoId: true, thumbnailUrl: true },
   }) : [];
   for (const stream of streams) {
-    const twitchVideoId = videoIds.get(stream.twitchId)!;
-    if (stream.twitchVideoId !== twitchVideoId) {
-      await prisma.stream.update({ where: { id: stream.id }, data: { twitchVideoId } });
+    const video = videoIds.get(stream.twitchId)!;
+    const thumbnailUrl = video.thumbnailUrl || stream.thumbnailUrl;
+    if (stream.twitchVideoId !== video.id || stream.thumbnailUrl !== thumbnailUrl) {
+      await prisma.stream.update({ where: { id: stream.id }, data: { twitchVideoId: video.id, thumbnailUrl } });
     }
   }
   const checkedAt = new Date();

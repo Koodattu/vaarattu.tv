@@ -35,6 +35,36 @@ test("follows all upload pages and refreshes video metadata using the exact chan
   assert.equal(catalog.videos[1].available, false);
 });
 
+test("stores the best supplied thumbnail and supports videos without thumbnails", async (t) => {
+  setup(t);
+  const thumbnails = [
+    { maxres: { url: "maxres.jpg" }, high: { url: "high.jpg" } },
+    { standard: { url: "standard.jpg" }, high: { url: "high.jpg" } },
+    { high: { url: "high.jpg" }, medium: { url: "medium.jpg" } },
+    { medium: { url: "medium.jpg" } },
+    { default: { url: "default.jpg" } },
+    undefined,
+  ];
+  t.mock.method(globalThis, "fetch", async (url) => {
+    if (url.pathname.endsWith("channels")) return response([{ id: "UC-exact", contentDetails: { relatedPlaylists: { uploads: "UU-exact" } } }]);
+    if (url.pathname.endsWith("playlistItems")) return response(thumbnails.map((_, index) => ({ contentDetails: { videoId: String(index) } })));
+    return response(thumbnails.map((images, index) => ({
+      id: String(index), snippet: { title: "Archive", channelId: "UC-exact", liveBroadcastContent: "none", thumbnails: images },
+      contentDetails: { duration: "PT1H" }, status: { embeddable: true, privacyStatus: "public", uploadStatus: "processed" },
+    })));
+  });
+  const saved = [];
+  t.mock.method(prisma, "$transaction", async (callback) => callback({
+    $queryRaw: async () => [{ locked: true }],
+    youTubeVideo: { upsert: async (query) => saved.push(query), updateMany: async () => ({}), findMany: async () => [] },
+    stream: { findMany: async () => [] },
+  }));
+  await syncYoutubeCatalog(false);
+  const expected = ["maxres.jpg", "standard.jpg", "high.jpg", "medium.jpg", "default.jpg", null];
+  assert.deepEqual(saved.map((query) => query.create.thumbnailUrl), expected);
+  assert.deepEqual(saved.map((query) => query.update.thumbnailUrl), expected);
+});
+
 test("failed or malformed full scans cannot touch the database or leak the API key", async (t) => {
   setup(t);
   const write = t.mock.method(prisma, "$transaction", async () => { throw new Error("Must not write"); });

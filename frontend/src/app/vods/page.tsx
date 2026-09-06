@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { StreamListItem } from "@/types/api";
 import { apiClient } from "@/lib/api";
 import { formatDate, formatDuration, formatRelativeTime } from "@/lib/utils";
@@ -12,6 +13,7 @@ export default function VodsPage() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [failedThumbnails, setFailedThumbnails] = useState<Set<string>>(new Set());
   const limit = 12;
 
   useEffect(() => {
@@ -71,28 +73,46 @@ export default function VodsPage() {
 
       {!loading && !error && vods.length > 0 && (
         <>
-          <div className="grid gap-4">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {vods.map((vod) => {
               const uniqueGames = getUniqueGames(vod.segments);
               const firstSegment = vod.segments[0];
+              const thumbnailUrl = vod.thumbnailUrl?.replace(/%?\{width\}/g, "640").replace(/%?\{height\}/g, "360");
 
               return (
                 <Link
                   key={vod.id}
                   href={`/vods/${vod.id}`}
-                  className="bg-gray-800 rounded-lg p-4 hover:bg-gray-750 transition-colors border border-gray-700 hover:border-purple-600"
+                  className="group flex flex-col overflow-hidden bg-gray-800 rounded-lg transition-colors border border-gray-700 hover:border-purple-600 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-purple-500"
                 >
-                  <div className="flex flex-col md:flex-row md:items-center gap-4">
-                    {/* Date and Duration */}
-                    <div className="md:w-48 flex-shrink-0">
-                      <div className="text-lg font-semibold text-white">{formatDate(vod.startTime)}</div>
-                      <div className="text-sm text-gray-400">{formatRelativeTime(vod.startTime)}</div>
-                      {vod.duration && <div className="text-sm text-purple-400 mt-1">{formatDuration(vod.duration)}</div>}
-                    </div>
+                  <div className="relative aspect-video overflow-hidden bg-gray-700">
+                    {thumbnailUrl && !failedThumbnails.has(thumbnailUrl) ? (
+                      <Image
+                        src={thumbnailUrl}
+                        alt=""
+                        fill
+                        unoptimized
+                        className="object-cover transition-transform motion-safe:group-hover:scale-105"
+                        onError={() => setFailedThumbnails((failed) => new Set(failed).add(thumbnailUrl))}
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-900" aria-hidden="true">
+                        <svg className="h-12 w-12 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <rect x="3" y="5" width="18" height="14" rx="3" />
+                          <path d="m10 9 5 3-5 3V9Z" />
+                        </svg>
+                      </div>
+                    )}
+                    <span className="absolute bottom-2 right-2 rounded bg-black/80 px-2 py-1 text-xs font-medium text-white">{formatDuration(vod.duration)}</span>
+                  </div>
 
-                    {/* Title and Games */}
-                    <div className="flex-1 min-w-0">
-                      {firstSegment && <div className="text-white font-medium mb-2 truncate">{firstSegment.title}</div>}
+                  <div className="flex flex-1 flex-col gap-3 p-4 min-w-0">
+                    <div>
+                      <h2 className="line-clamp-2 text-white font-medium group-hover:text-purple-400 transition-colors">{firstSegment?.title || formatDate(vod.startTime)}</h2>
+                      <div className="text-sm text-gray-400 mt-1">{formatDate(vod.startTime)}</div>
+                      <div className="text-xs text-gray-500 mt-1">{formatRelativeTime(vod.startTime)}</div>
+                    </div>
+                    <div>
                       <div className="flex flex-wrap gap-2">
                         {uniqueGames.slice(0, 4).map((game, index) => (
                           <span key={index} className="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded">
@@ -104,7 +124,7 @@ export default function VodsPage() {
                     </div>
 
                     {/* Stats */}
-                    <div className="flex md:flex-col gap-4 md:gap-1 text-sm text-gray-400 md:text-right md:w-32 flex-shrink-0">
+                    <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1 border-t border-gray-700 pt-3 text-xs text-gray-400">
                       <div className="flex items-center gap-1">
                         <span>💬</span>
                         <span>{vod.totalMessages.toLocaleString()}</span>

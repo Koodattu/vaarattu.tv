@@ -49,6 +49,12 @@ export class StreamService {
           startTime: true,
           endTime: true,
           thumbnailUrl: true,
+          youtubeVideos: {
+            where: { available: true, thumbnailUrl: { not: null } },
+            select: { thumbnailUrl: true },
+            orderBy: { position: "asc" },
+            take: 1,
+          },
           _count: {
             select: {
               messages: true,
@@ -86,7 +92,7 @@ export class StreamService {
         startTime: stream.startTime,
         endTime: stream.endTime,
         duration,
-        thumbnailUrl: stream.thumbnailUrl,
+        thumbnailUrl: stream.youtubeVideos[0]?.thumbnailUrl || stream.thumbnailUrl,
         totalMessages: stream._count.messages,
         totalRedemptions: stream._count.redemptions,
         uniqueViewers: stream._count.viewSessions,
