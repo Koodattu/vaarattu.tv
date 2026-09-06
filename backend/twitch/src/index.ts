@@ -12,6 +12,7 @@ import { initializeEmotes } from "./services/emote.service";
 import { testOpenAIConnection } from "./services/openai.service";
 import { startStreamStatusPolling } from "./twitch/api/streamPolling.service";
 import fs from "fs";
+import { startYoutubeSync } from "./services/youtube.service";
 import prisma from "./prismaClient";
 import { registerChatHandlers } from "./twitch/api/chatHandlers";
 
@@ -25,6 +26,7 @@ async function start() {
     process.exit(1);
   }
   const { streamer, bot } = getTokenPaths();
+  startYoutubeSync();
   let missing = [];
   if (!fs.existsSync(streamer)) missing.push("streamer");
   if (!fs.existsSync(bot)) missing.push("bot");

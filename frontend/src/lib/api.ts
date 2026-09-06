@@ -1,5 +1,6 @@
 import {
   ApiResponse,
+  ChatReplayPage,
   StreamListItem,
   StreamDetail,
   StreamActivity,
@@ -54,6 +55,10 @@ class ApiClient {
 
   async getStreamActivity(streamId: number): Promise<ApiResponse<StreamActivity>> {
     return this.fetchApi<StreamActivity>(`/api/streams/${streamId}/activity`);
+  }
+
+  async getChatReplay(streamId: number, start: number, after?: string): Promise<ApiResponse<ChatReplayPage>> {
+    return this.fetchApi<ChatReplayPage>(`/api/streams/${streamId}/chat?start=${start}${after ? `&after=${encodeURIComponent(after)}` : ""}`);
   }
 
   async getStreamTimeline(streamId: number): Promise<ApiResponse<StreamTimeline>> {

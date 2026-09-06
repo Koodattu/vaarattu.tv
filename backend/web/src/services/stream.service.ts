@@ -2,6 +2,7 @@ import prisma from "../prismaClient";
 import { StreamListItem, StreamDetail, StreamTimeline } from "../types/api.types";
 import { calculateOffset } from "../utils/pagination";
 import { ActivityMinute, buildStreamActivity } from "../utils/streamActivity";
+import { twitchRecordingAvailable } from "../utils/recordingPlayback";
 
 export class StreamService {
   async getStreamActivity(streamId: number) {
@@ -110,6 +111,13 @@ export class StreamService {
         id: true,
         twitchId: true,
         twitchVideoId: true,
+        twitchVideoAvailable: true,
+        twitchVideoCheckedAt: true,
+        youtubeVideos: {
+          where: { available: true },
+          select: { id: true, title: true, position: true, streamOffsetSeconds: true, durationSeconds: true },
+          orderBy: { position: "asc" },
+        },
         startTime: true,
         endTime: true,
         thumbnailUrl: true,
@@ -148,6 +156,8 @@ export class StreamService {
       id: stream.id,
       twitchId: stream.twitchId,
       twitchVideoId: stream.twitchVideoId,
+      twitchVideoAvailable: twitchRecordingAvailable(stream),
+      youtubeVideos: stream.youtubeVideos.map((video) => ({ ...video, position: video.position! })),
       startTime: stream.startTime,
       endTime: stream.endTime,
       duration,

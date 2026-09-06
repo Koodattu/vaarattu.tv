@@ -196,6 +196,8 @@ export interface StreamDetail {
   id: number;
   twitchId: string;
   twitchVideoId: string | null;
+  twitchVideoAvailable: boolean;
+  youtubeVideos: Array<{ id: string; title: string; position: number; streamOffsetSeconds: number; durationSeconds: number }>;
   startTime: Date;
   endTime: Date | null;
   duration: number | null;

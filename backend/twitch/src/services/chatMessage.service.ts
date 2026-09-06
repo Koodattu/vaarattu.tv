@@ -6,6 +6,7 @@ import { EventSubChannelChatMessageEvent } from "@twurple/eventsub-base";
 import { streamState } from "./streamState.service";
 
 export async function processChatMessageEvent(event: EventSubChannelChatMessageEvent) {
+  const timestamp = new Date();
   // Only process messages during active streams
   const streamId = streamState.getCurrentStreamId();
   if (!streamId) {
@@ -26,7 +27,7 @@ export async function processChatMessageEvent(event: EventSubChannelChatMessageE
       content: event.messageText,
       userId: user.id,
       streamId: streamId,
-      timestamp: new Date(),
+      timestamp,
     },
   });
 

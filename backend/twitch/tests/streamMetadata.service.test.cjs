@@ -4,7 +4,7 @@ const prismaModule = require("../src/prismaClient");
 const originalPrisma = prismaModule.default;
 const unexpectedQuery = () => { throw new Error("Unexpected database query"); };
 const prisma = {
-  stream: { findMany: unexpectedQuery, update: unexpectedQuery, findUnique: unexpectedQuery },
+  stream: { findMany: unexpectedQuery, update: unexpectedQuery, updateMany: unexpectedQuery, findUnique: unexpectedQuery },
   streamViewerSample: { createMany: unexpectedQuery },
 };
 prismaModule.default = prisma;
@@ -30,9 +30,14 @@ test("links archives by exact stream ID, keeps the newest match, and skips uncha
     return [{ id: 1, twitchId: "stream-1", twitchVideoId: null }, { id: 2, twitchId: "stream-2", twitchVideoId: "video-2" }];
   });
   const update = t.mock.method(prisma.stream, "update", async () => ({}));
+  const availability = t.mock.method(prisma.stream, "updateMany", async () => ({ count: 1 }));
   await syncStreamVideoIds("channel-1");
   assert.equal(update.mock.callCount(), 1);
   assert.deepEqual(update.mock.calls[0].arguments[0], { where: { id: 1 }, data: { twitchVideoId: "video-new" } });
+  assert.equal(availability.mock.callCount(), 2);
+  assert.equal(availability.mock.calls[0].arguments[0].data.twitchVideoAvailable, true);
+  assert.deepEqual(availability.mock.calls[1].arguments[0].where.twitchVideoId.notIn, ["video-new", "video-old", "video-2", "highlight"]);
+  assert.equal(availability.mock.calls[1].arguments[0].data.twitchVideoAvailable, false);
 });
 
 test("empty or failed archive responses do not erase saved IDs, and later runs retry", async (t) => {
@@ -47,11 +52,13 @@ test("empty or failed archive responses do not erase saved IDs, and later runs r
   } }));
   const read = t.mock.method(prisma.stream, "findMany", async () => [{ id: 1, twitchId: "stream-1", twitchVideoId: null }]);
   const update = t.mock.method(prisma.stream, "update", async () => ({}));
+  const availability = t.mock.method(prisma.stream, "updateMany", async () => ({ count: 1 }));
   await syncStreamVideoIds("channel-1");
   assert.equal(read.mock.callCount(), 0);
   fail = true;
   await assert.rejects(syncStreamVideoIds("channel-1"), /Twitch unavailable/);
   assert.equal(update.mock.callCount(), 0);
+  assert.equal(availability.mock.callCount(), 2, "failed API requests must not change availability");
   fail = false;
   response = [{ id: "video-1", streamId: "stream-1" }];
   await syncStreamVideoIds("channel-1");

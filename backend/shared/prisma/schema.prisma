@@ -83,6 +83,8 @@ model Message {
   stream    Stream   @relation(fields: [streamId], references: [id])
   content   String
   timestamp DateTime @default(now())
+
+  @@index([streamId, timestamp, id])
 }
 
 model ChannelReward {
@@ -146,6 +148,9 @@ model Stream {
   id           Int             @id @default(autoincrement())
   twitchId     String          @unique
   twitchVideoId String?        @unique
+  twitchVideoAvailable Boolean?
+  twitchVideoCheckedAt DateTime?
+  youtubeMatchLocked Boolean @default(false)
   startTime    DateTime
   endTime      DateTime?
   thumbnailUrl String?
@@ -156,6 +161,25 @@ model Stream {
   redemptions  Redemption[]
   viewSessions ViewSession[]
   viewerSamples StreamViewerSample[]
+  youtubeVideos YouTubeVideo[]
+}
+
+model YouTubeVideo {
+  id String @id
+  channelId String
+  title String
+  durationSeconds Int
+  available Boolean @default(true)
+  checkedAt DateTime
+  streamId Int?
+  stream Stream? @relation(fields: [streamId], references: [id], onDelete: Restrict)
+  position Int?
+  streamOffsetSeconds Int @default(0)
+  matchSource String @default("unmatched")
+  matchScore Float?
+
+  @@unique([streamId, position])
+  @@index([channelId])
 }
 
 model StreamViewerSample {

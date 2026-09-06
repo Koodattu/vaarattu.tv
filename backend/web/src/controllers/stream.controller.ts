@@ -2,10 +2,22 @@ import { Request, Response } from "express";
 import { StreamService } from "../services/stream.service";
 import { ApiResponse } from "../types/api.types";
 import { parsePaginationQuery, createPaginationInfo } from "../utils/pagination";
+import { getChatReplay, parseReplayQuery } from "../services/chatReplay.service";
 
 const streamService = new StreamService();
 
 export class StreamController {
+  async getChatReplay(req: Request, res: Response<ApiResponse>) {
+    const streamId = Number(req.params.id);
+    const query = parseReplayQuery(req.query);
+    if (!Number.isSafeInteger(streamId) || streamId <= 0 || streamId > 2147483647 || !query) {
+      return res.status(400).json({ success: false, error: "Invalid chat replay request" });
+    }
+    const replay = await getChatReplay(streamId, query);
+    if (!replay) return res.status(404).json({ success: false, error: "Stream not found" });
+    res.json({ success: true, data: replay });
+  }
+
   async getStreamActivity(req: Request, res: Response<ApiResponse>) {
     const streamId = Number(req.params.id);
     if (!Number.isSafeInteger(streamId) || streamId <= 0 || streamId > 2147483647) {

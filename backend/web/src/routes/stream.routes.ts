@@ -13,6 +13,7 @@ router.get("/", asyncHandler(streamController.getStreams.bind(streamController))
 router.get("/:id", asyncHandler(streamController.getStream.bind(streamController)));
 
 router.get("/:id/activity", asyncHandler(streamController.getStreamActivity.bind(streamController)));
+router.get("/:id/chat", asyncHandler(streamController.getChatReplay.bind(streamController)));
 
 // GET /api/streams/:id/timeline - Get detailed stream timeline (mod only for now)
 router.get("/:id/timeline", asyncHandler(streamController.getStreamTimeline.bind(streamController)));

@@ -10,7 +10,8 @@
     "db:push": "cd ../shared && npm run db:push",
     "db:migrate": "cd ../shared && npm run db:migrate",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "test:openai": "node --require ts-node/register --test tests/openai.service.test.cjs"
+    "test:openai": "node --require ts-node/register --test tests/openai.service.test.cjs",
+    "recordings": "ts-node src/recordings.ts"
   },
   "keywords": [],
   "author": "",

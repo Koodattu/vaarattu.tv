@@ -38,6 +38,8 @@ export interface StreamDetail {
   id: number;
   twitchId: string;
   twitchVideoId: string | null;
+  twitchVideoAvailable: boolean;
+  youtubeVideos: Array<{ id: string; title: string; position: number; streamOffsetSeconds: number; durationSeconds: number }>;
   startTime: string;
   endTime: string | null;
   duration: number | null;
@@ -66,6 +68,18 @@ export interface StreamActivity {
     messagesPerMinute: number;
     activeChatters: number;
   }>;
+}
+
+export interface ChatReplayMessage {
+  id: number;
+  offsetSeconds: number;
+  content: string;
+  user: { login: string; displayName: string };
+}
+
+export interface ChatReplayPage {
+  messages: ChatReplayMessage[];
+  nextCursor: string | null;
 }
 
 export interface StreamTimeline {

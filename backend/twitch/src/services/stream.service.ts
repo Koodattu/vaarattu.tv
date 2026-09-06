@@ -162,7 +162,7 @@ export async function processChannelUpdateEvent(event: EventSubChannelUpdateEven
     console.log(`[EventSub] No previous segment, created new segment on channel update.`);
     return;
   }
-  if (lastSegment.gameId !== dbGame.id) {
+  if (lastSegment.gameId !== dbGame.id || lastSegment.title !== event.streamTitle) {
     await prisma.streamSegment.update({
       where: { id: lastSegment.id },
       data: { endTime: new Date() },
@@ -175,13 +175,13 @@ export async function processChannelUpdateEvent(event: EventSubChannelUpdateEven
         gameId: dbGame.id,
       },
     });
-    console.log(`[EventSub] Started new segment due to game change.`, {
+    console.log(`[EventSub] Started new segment due to game or title change.`, {
       streamId: latest.id,
       gameId: dbGame.id,
       gameName: dbGame.name,
       title: event.streamTitle,
     });
   } else {
-    console.log(`[EventSub] Channel update event: game did not change, no new segment created.`);
+    console.log(`[EventSub] Channel update event: game and title did not change, no new segment created.`);
   }
 }

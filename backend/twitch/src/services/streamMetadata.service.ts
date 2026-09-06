@@ -9,18 +9,27 @@ export async function syncStreamVideoIds(broadcasterId: string): Promise<void> {
   for (const video of videos) {
     if (video.streamId && !videoIds.has(video.streamId)) videoIds.set(video.streamId, video.id);
   }
-  if (videoIds.size === 0) return;
 
-  const streams = await prisma.stream.findMany({
+  const streams = videoIds.size ? await prisma.stream.findMany({
     where: { twitchId: { in: [...videoIds.keys()] } },
     select: { id: true, twitchId: true, twitchVideoId: true },
-  });
+  }) : [];
   for (const stream of streams) {
     const twitchVideoId = videoIds.get(stream.twitchId)!;
     if (stream.twitchVideoId !== twitchVideoId) {
       await prisma.stream.update({ where: { id: stream.id }, data: { twitchVideoId } });
     }
   }
+  const checkedAt = new Date();
+  const publishedIds = videos.map((video) => video.id);
+  await prisma.stream.updateMany({
+    where: { twitchVideoId: { in: publishedIds } },
+    data: { twitchVideoAvailable: true, twitchVideoCheckedAt: checkedAt },
+  });
+  await prisma.stream.updateMany({
+    where: { twitchVideoId: { not: null, notIn: publishedIds } },
+    data: { twitchVideoAvailable: false, twitchVideoCheckedAt: checkedAt },
+  });
 }
 
 export async function recordStreamViewerSample(stream: Pick<HelixStream, "id" | "viewers">, timestamp: Date): Promise<void> {
