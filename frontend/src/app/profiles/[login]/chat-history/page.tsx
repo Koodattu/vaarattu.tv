@@ -135,53 +135,55 @@ export default function UserChatHistoryPage({ params }: ChatHistoryPageProps) {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-6">
-        <Link href={`/profiles/${login}`} className="text-purple-400 hover:text-purple-300 transition-colors text-sm mb-4 inline-block">
-          ← Back to {profile.displayName}
-        </Link>
+    <div className="container mx-auto px-4 py-4">
+      <Link href={`/profiles/${login}`} className="text-purple-400 hover:text-purple-300 transition-colors text-sm mb-2 inline-block">
+        ← Back to {profile.displayName}
+      </Link>
 
-        <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">{profile.displayName}&apos;s Chat History</h1>
-        <p className="text-gray-400 text-sm">
-          {messages.length.toLocaleString()} message{messages.length !== 1 ? "s" : ""}
-        </p>
+      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h1 className="min-w-0 max-w-full text-xl sm:text-2xl font-bold text-white break-words">{profile.displayName}&apos;s Chat History</h1>
+          <p className="text-gray-400 text-sm whitespace-nowrap">
+            {messages.length.toLocaleString()} message{messages.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+
+        <form onSubmit={handleSearchSubmit} className="flex gap-2 lg:w-96 lg:shrink-0">
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            placeholder="Search messages"
+            className="min-w-0 flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+          />
+          <button type="submit" className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-sm font-medium transition-colors">
+            Search
+          </button>
+          <button type="button" onClick={clearSearch} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md text-sm font-medium transition-colors">
+            Clear
+          </button>
+        </form>
       </div>
-
-      <form onSubmit={handleSearchSubmit} className="mb-6 flex flex-col sm:flex-row gap-2">
-        <input
-          type="text"
-          value={searchInput}
-          onChange={(event) => setSearchInput(event.target.value)}
-          placeholder="Search messages"
-          className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-        />
-        <button type="submit" className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-sm font-medium transition-colors">
-          Search
-        </button>
-        <button type="button" onClick={clearSearch} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md text-sm font-medium transition-colors">
-          Clear
-        </button>
-      </form>
 
       {dayGroups.length === 0 ? (
         <div className="bg-gray-800 rounded-lg border border-gray-700 p-8 text-center">
           <p className="text-gray-400">No messages found.</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="rounded-lg border border-gray-700 bg-gray-800 overflow-hidden">
           {dayGroups.map((group) => (
-            <section key={group.dayKey} className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-              <header className="px-4 py-3 bg-gray-900/60 border-b border-gray-700">
-                <h2 className="text-sm font-semibold text-gray-300">{group.dayLabel}</h2>
+            <section key={group.dayKey} className="border-t border-gray-700 first:border-t-0">
+              <header className="px-3 py-1.5 bg-gray-900/60 border-b border-gray-700">
+                <h2 className="text-xs font-semibold text-gray-300">{group.dayLabel}</h2>
               </header>
 
-              <ul className="divide-y divide-gray-700">
+              <ul className="divide-y divide-gray-700/40">
                 {group.messages.map((message) => (
-                  <li key={message.id} className="px-4 py-3">
-                    <div className="text-xs text-gray-500 mb-1">
+                  <li key={message.id} className="grid grid-cols-[5rem_minmax(0,1fr)] items-start gap-x-2 px-3 py-0.5 hover:bg-gray-700/30">
+                    <time dateTime={message.timestamp} className="text-xs leading-5 text-gray-400 tabular-nums whitespace-nowrap">
                       {new Date(message.timestamp).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                    </div>
-                    <p className="text-sm text-gray-200 whitespace-pre-wrap break-words">{message.content}</p>
+                    </time>
+                    <p className="text-sm leading-5 text-gray-200 whitespace-pre-wrap break-words">{message.content}</p>
                   </li>
                 ))}
               </ul>
