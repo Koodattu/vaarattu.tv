@@ -3,22 +3,27 @@ import { getStreamByUserId } from "./twitchApi";
 import { getUserId } from "../auth/authProviders";
 import { processStreamOnlineEvent, processStreamOfflineEvent } from "../../services/stream.service";
 import { streamState } from "../../services/streamState.service";
+import { recordStreamViewerSample, syncStreamVideoIds } from "../../services/streamMetadata.service";
 
 interface StreamPollingState {
   isPolling: boolean;
   intervalId: NodeJS.Timeout | null;
   lastKnownStatus: "online" | "offline" | null;
+  isChecking: boolean;
+  lastVideoSync: number | null;
 }
 
 const pollingState: StreamPollingState = {
   isPolling: false,
   intervalId: null,
   lastKnownStatus: null,
+  isChecking: false,
+  lastVideoSync: null,
 };
 
 /**
  * Starts the periodic stream status polling service
- * Checks every 5 minutes (300,000ms) for stream status changes
+ * Checks stream status and records the live audience every minute.
  */
 export function startStreamStatusPolling(): void {
   if (pollingState.isPolling) {
@@ -26,13 +31,13 @@ export function startStreamStatusPolling(): void {
     return;
   }
 
-  console.log("[StreamPolling] Starting periodic stream status checking (every 5 minutes)");
+  console.log("[StreamPolling] Starting periodic stream status checking (every minute)");
 
   // Initial check
   checkStreamStatus();
 
   // Set up periodic checks
-  pollingState.intervalId = setInterval(checkStreamStatus, 5 * 60 * 1000); // 5 minutes
+  pollingState.intervalId = setInterval(checkStreamStatus, 60 * 1000);
   pollingState.isPolling = true;
 }
 
@@ -54,17 +59,21 @@ export function stopStreamStatusPolling(): void {
 
   pollingState.isPolling = false;
   pollingState.lastKnownStatus = null;
+  pollingState.lastVideoSync = null;
 }
 
 /**
  * Manually trigger a stream status check
  */
 export async function checkStreamStatus(): Promise<void> {
+  if (pollingState.isChecking) return;
+  pollingState.isChecking = true;
   try {
     const streamerUserId = getUserId("streamer");
 
     // Get current stream status from Twitch API
     const currentStream = await getStreamByUserId(streamerUserId);
+    const observedAt = new Date();
     const currentStatus: "online" | "offline" = currentStream ? "online" : "offline";
 
     console.log(`[StreamPolling] Checked stream status: ${currentStatus}`);
@@ -81,9 +90,23 @@ export async function checkStreamStatus(): Promise<void> {
     // Verify database state matches API state
     await verifyDatabaseState(currentStatus, currentStream);
 
+    if (currentStream) await recordStreamViewerSample(currentStream, observedAt);
+
     pollingState.lastKnownStatus = currentStatus;
   } catch (error) {
     console.error("[StreamPolling] Error checking stream status:", error);
+  } finally {
+    pollingState.isChecking = false;
+  }
+
+  // Archives can appear after a stream ends. Revisit them while offline as well.
+  if (pollingState.lastVideoSync === null || Date.now() - pollingState.lastVideoSync >= 5 * 60 * 1000) {
+    pollingState.lastVideoSync = Date.now();
+    try {
+      await syncStreamVideoIds(getUserId("streamer"));
+    } catch (error) {
+      console.error("[StreamPolling] Failed to sync archive video IDs:", error);
+    }
   }
 }
 

@@ -7,13 +7,17 @@ export class StreamService {
   async getStreamActivity(streamId: number) {
     const stream = await prisma.stream.findUnique({
       where: { id: streamId },
-      select: { startTime: true, endTime: true },
+      select: {
+        startTime: true,
+        endTime: true,
+        viewerSamples: { select: { timestamp: true, viewerCount: true }, orderBy: { timestamp: "asc" } },
+      },
     });
     if (!stream) return null;
 
     const endTime = stream.endTime ?? new Date();
     const [sessions, minutes] = await Promise.all([
-      prisma.viewSession.findMany({
+      stream.viewerSamples.length > 0 ? Promise.resolve([]) : prisma.viewSession.findMany({
         where: { streamId },
         select: { userId: true, sessionStart: true, sessionEnd: true },
       }),
@@ -27,7 +31,7 @@ export class StreamService {
         ORDER BY 1
       `,
     ]);
-    return buildStreamActivity(stream.startTime, endTime, sessions, minutes);
+    return buildStreamActivity(stream.startTime, endTime, sessions, minutes, stream.viewerSamples);
   }
 
   async getStreams(page: number, limit: number): Promise<{ streams: StreamListItem[]; total: number }> {
@@ -105,6 +109,7 @@ export class StreamService {
       select: {
         id: true,
         twitchId: true,
+        twitchVideoId: true,
         startTime: true,
         endTime: true,
         thumbnailUrl: true,
@@ -142,6 +147,7 @@ export class StreamService {
     return {
       id: stream.id,
       twitchId: stream.twitchId,
+      twitchVideoId: stream.twitchVideoId,
       startTime: stream.startTime,
       endTime: stream.endTime,
       duration,

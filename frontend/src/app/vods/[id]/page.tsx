@@ -110,7 +110,7 @@ export default function VodDetailPage({ params }: VodDetailPageProps) {
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-white">{vod.uniqueViewers}</div>
-              <div className="text-gray-400">Viewers</div>
+              <div className="text-gray-400">Chat sessions</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-white">{vod.totalRedemptions}</div>

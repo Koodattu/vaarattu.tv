@@ -11,12 +11,14 @@ export function buildStreamActivity(
   endTime: Date,
   sessions: Array<{ userId: number; sessionStart: Date; sessionEnd: Date | null }>,
   minutes: ActivityMinute[],
+  viewerSamples: Array<{ timestamp: Date; viewerCount: number }> = [],
 ): StreamActivity {
   const start = startTime.getTime();
   const end = endTime.getTime();
   const duration = end - start;
   const intervalMinutes = Math.max(1, Math.ceil(duration / 60000 / 300));
-  if (duration <= 0) return { intervalMinutes, points: [] };
+  const viewerSource = viewerSamples.length > 0 ? "twitch" : "chatPresence";
+  if (duration <= 0) return { viewerSource, intervalMinutes, points: [] };
 
   const interval = intervalMinutes * 60000;
   const points: StreamActivity["points"] = Array.from({ length: Math.ceil(duration / interval) }, (_, index) => ({
@@ -33,6 +35,16 @@ export function buildStreamActivity(
     const observedMinutes = (Math.min(end, start + (index + 1) * interval) - (start + index * interval)) / 60000;
     point.messagesPerMinute += minute.messages / observedMinutes;
     point.activeChatters = Math.max(point.activeChatters, minute.chatters);
+  }
+
+  if (viewerSource === "twitch") {
+    for (const sample of viewerSamples) {
+      const time = sample.timestamp.getTime();
+      if (time < start || time >= end) continue;
+      const point = points[Math.floor((time - start) / interval)];
+      point.viewers = Math.max(point.viewers ?? 0, sample.viewerCount);
+    }
+    return { viewerSource, intervalMinutes, points };
   }
 
   const events: Array<{ time: number; userId: number; delta: number }> = [];
@@ -63,5 +75,5 @@ export function buildStreamActivity(
     }
     points[index].viewers = Math.max(peak, active.size);
   }
-  return { intervalMinutes, points };
+  return { viewerSource, intervalMinutes, points };
 }

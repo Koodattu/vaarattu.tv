@@ -145,6 +145,7 @@ model Cheer {
 model Stream {
   id           Int             @id @default(autoincrement())
   twitchId     String          @unique
+  twitchVideoId String?        @unique
   startTime    DateTime
   endTime      DateTime?
   thumbnailUrl String?
@@ -154,6 +155,17 @@ model Stream {
   messages     Message[]
   redemptions  Redemption[]
   viewSessions ViewSession[]
+  viewerSamples StreamViewerSample[]
+}
+
+model StreamViewerSample {
+  id          Int      @id @default(autoincrement())
+  streamId    Int
+  stream      Stream   @relation(fields: [streamId], references: [id])
+  timestamp   DateTime
+  viewerCount Int
+
+  @@unique([streamId, timestamp])
 }
 
 model StreamSegment {

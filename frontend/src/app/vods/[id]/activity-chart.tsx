@@ -5,11 +5,6 @@ import { apiClient } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import type { StreamActivity } from "@/types/api";
 
-const series = [
-  { key: "viewers", label: "Tracked viewers", color: "#34d399" },
-  { key: "messagesPerMinute", label: "Messages / min", color: "#c084fc" },
-  { key: "activeChatters", label: "Peak active chatters", color: "#38bdf8" },
-] as const;
 const width = 900;
 const height = 280;
 const plot = { left: 64, right: 64, top: 24, bottom: 40 };
@@ -34,6 +29,13 @@ export function StreamActivityChart({ streamId }: { streamId: number }) {
   }, [streamId, attempt]);
 
   const points = activity?.points ?? [];
+  const hasAudienceSamples = activity?.viewerSource === "twitch";
+  const viewerLabel = hasAudienceSamples ? "Viewers" : "Tracked viewers";
+  const series = [
+    { key: "viewers", label: viewerLabel, color: "#34d399" },
+    { key: "messagesPerMinute", label: "Messages / min", color: "#c084fc" },
+    { key: "activeChatters", label: "Peak active chatters", color: "#38bdf8" },
+  ] as const;
   const hasData = points.some((point) => point.viewers !== null || point.messagesPerMinute > 0);
   const viewerMax = Math.max(1, ...points.map((point) => point.viewers ?? 0));
   const chatMax = Math.max(1, ...points.map((point) => Math.max(visible.messagesPerMinute ? point.messagesPerMinute : 0, visible.activeChatters ? point.activeChatters : 0)));
@@ -66,7 +68,7 @@ export function StreamActivityChart({ streamId }: { streamId: number }) {
                 {series.map((item) => {
                   const values = points.map((point) => point[item.key]).filter((value) => value !== null);
                   return <div key={item.key}>
-                    <p className="text-sm text-gray-400">{item.key === "viewers" ? "Peak tracked viewers" : item.key === "messagesPerMinute" ? "Peak messages / min" : item.label}</p>
+                    <p className="text-sm text-gray-400">{item.key === "viewers" ? (hasAudienceSamples ? "Peak viewers" : "Peak tracked viewers") : item.key === "messagesPerMinute" ? "Peak messages / min" : item.label}</p>
                     <p className="mt-1 text-2xl font-bold text-white">{number(values.length ? Math.max(...values) : null)}</p>
                   </div>;
                 })}
@@ -78,7 +80,7 @@ export function StreamActivityChart({ streamId }: { streamId: number }) {
                   <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />{item.label}
                 </button>)}
               </div>
-              <div className="flex justify-between px-5 pt-5 text-xs text-gray-400"><span>Tracked viewers</span><span>Messages / min · Chatters</span></div>
+              <div className="flex justify-between px-5 pt-5 text-xs text-gray-400"><span>{viewerLabel}</span><span>Messages / min · Chatters</span></div>
               <div className="overflow-x-auto px-2">
                 <svg viewBox={`0 0 ${width} ${height}`} className="w-full min-w-[600px]" role="img" aria-label="Stream activity over time. Use the interval slider below to inspect values."
                   onPointerMove={(event) => {
@@ -123,7 +125,9 @@ export function StreamActivityChart({ streamId }: { streamId: number }) {
                 </div>}
               </div>
               <figcaption className="px-5 pb-5 text-xs leading-relaxed text-gray-400">
-                Tracked viewers use the left scale and show peak chat presence per interval, not Twitch’s total audience.
+                {hasAudienceSamples
+                  ? "Viewers use the left scale and show the highest Twitch audience sample in each interval. Samples are collected every minute; intervals without samples appear as gaps. "
+                  : "Twitch audience counts were not recorded for this stream. Tracked viewers use the left scale and show peak chat presence per interval, not Twitch’s total audience. "}
                 Chat activity uses the right scale. Peak active chatters counts the most distinct people who sent a message in one minute within each interval.
                 Messages reflect captured chat only; gaps in tracking may appear as inactivity.
               </figcaption>

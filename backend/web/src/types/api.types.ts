@@ -7,6 +7,7 @@ export interface ApiResponse<T = any> {
 }
 
 export interface StreamActivity {
+  viewerSource: "twitch" | "chatPresence";
   intervalMinutes: number;
   points: Array<{
     time: string;
@@ -194,6 +195,7 @@ export interface StreamListItem {
 export interface StreamDetail {
   id: number;
   twitchId: string;
+  twitchVideoId: string | null;
   startTime: Date;
   endTime: Date | null;
   duration: number | null;

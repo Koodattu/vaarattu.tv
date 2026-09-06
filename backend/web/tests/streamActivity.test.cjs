@@ -49,3 +49,22 @@ test("handles empty streams and ignores observations outside the stream", () => 
   assert.equal(activity.points[0].viewers, null);
   assert.equal(activity.points[0].messagesPerMinute, 0);
 });
+
+test("uses Twitch samples without filling missing intervals from chat presence", () => {
+  const activity = buildStreamActivity(start, at(4), [session(1, 0, null)], [], [
+    { timestamp: at(0.5), viewerCount: 120 },
+    { timestamp: at(2.5), viewerCount: 0 },
+    { timestamp: at(4), viewerCount: 999 },
+  ]);
+  assert.equal(activity.viewerSource, "twitch");
+  assert.deepEqual(activity.points.map((point) => point.viewers), [120, null, 0, null]);
+});
+
+test("groups audience samples by peak and keeps historical chat presence labelled", () => {
+  const activity = buildStreamActivity(start, at(601), [], [], [
+    { timestamp: at(0.1), viewerCount: 20 }, { timestamp: at(1.1), viewerCount: 50 },
+    { timestamp: at(2.1), viewerCount: 30 }, { timestamp: at(3.1), viewerCount: 10 },
+  ]);
+  assert.deepEqual(activity.points.slice(0, 3).map((point) => point.viewers), [50, 10, null]);
+  assert.equal(buildStreamActivity(start, at(1), [session(1, 0, 1)], []).viewerSource, "chatPresence");
+});
