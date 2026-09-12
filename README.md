@@ -143,26 +143,27 @@ Designed to run on a Raspberry Pi 5 — no expensive cloud hosting required. Eve
 
 ### Configuration
 
-1. Set up environment variables in `backend/twitch/.env`:
+1. Set up environment variables in `backend/.env`:
    - `DATABASE_URL`
    - `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET`
    - `OPENAI_API_KEY`
    - `STREAMER_USER_ID` and `BOT_USER_ID`
 
-2. Run database migrations:
+2. Build the images:
 
    ```bash
-   cd backend/shared
-   npm run db:migrate
+   docker compose --progress plain build
    ```
 
-3. Start services with Docker Compose:
+3. Start services with Docker Compose. The migration service applies database migrations before either backend starts:
 
    ```bash
-   docker-compose up
+   docker compose up -d --no-build
    ```
 
 4. On first run, complete the OAuth flow for streamer and bot accounts
+
+For build caching, separate build/deploy commands, and troubleshooting slow builds on the Raspberry Pi, see [Docker builds](docs/docker-builds.md).
 
 ### Services
 

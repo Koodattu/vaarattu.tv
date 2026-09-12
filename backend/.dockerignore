@@ -1,6 +1,11 @@
 **/node_modules
 **/dist
-**/.env
+**/.env*
 **/*.log
+**/tokens.*.json
+**/tests
+**/coverage
+**/*.tsbuildinfo
+**/README.md
 .git
 .gitignore

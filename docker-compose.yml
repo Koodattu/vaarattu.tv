@@ -2,14 +2,12 @@ services:
   db-migrate:
     build:
       context: ./backend
-      dockerfile: ./web/Dockerfile
+      dockerfile: ./Dockerfile
+      target: migrate
     environment:
       - NODE_ENV=production
     env_file:
       - ./backend/.env
-    volumes:
-      - ./backend/.env:/app/.env:ro
-    command: ["sh", "-c", "cd /app/shared && npx prisma migrate deploy"]
     restart: "no"
     network_mode: "host"
 
@@ -17,8 +15,6 @@ services:
     build:
       context: ./frontend
       dockerfile: ./Dockerfile
-    ports:
-      - "3002:3002"
     environment:
       - NODE_ENV=production
       - PORT=3002
@@ -28,12 +24,13 @@ services:
   backend-twitch:
     build:
       context: ./backend
-      dockerfile: ./twitch/Dockerfile
+      dockerfile: ./Dockerfile
+      target: twitch
+      args:
+        SERVICE: twitch
     depends_on:
       db-migrate:
         condition: service_completed_successfully
-    ports:
-      - "4000:4000"
     environment:
       - NODE_ENV=production
     volumes:
@@ -46,18 +43,16 @@ services:
   backend-web:
     build:
       context: ./backend
-      dockerfile: ./web/Dockerfile
+      dockerfile: ./Dockerfile
+      target: web
+      args:
+        SERVICE: web
     depends_on:
       db-migrate:
         condition: service_completed_successfully
-    ports:
-      - "3001:3001"
     environment:
       - NODE_ENV=production
     volumes:
       - ./backend/.env:/app/.env:ro
     restart: unless-stopped
     network_mode: "host"
-
-volumes:
-  postgres_data:

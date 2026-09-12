@@ -18,25 +18,23 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@mkody/twitch-emoticons": "^2.9.5",
+    "@mkody/twitch-emoticons": "^2.9.9",
     "@vaarattu/shared": "file:../shared",
-    "@twurple/api": "^8.0.2",
-    "@twurple/api-call": "^8.0.2",
-    "@twurple/auth": "^8.0.2",
-    "@twurple/chat": "^8.0.2",
-    "@twurple/common": "^8.0.2",
-    "@twurple/eventsub-ws": "^8.0.2",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
+    "@twurple/api": "^8.1.4",
+    "@twurple/auth": "^8.1.4",
+    "@twurple/chat": "^8.1.4",
+    "@twurple/eventsub-base": "^8.1.4",
+    "@twurple/eventsub-ws": "^8.1.4",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "openai": "^6.10.0"
+    "openai": "^6.49.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
-    "@types/dotenv": "^8.2.3",
     "@types/express": "^5.0.6",
-    "@types/node": "^24.10.1",
-    "nodemon": "^3.1.11",
+    "@types/node": "^24.13.4",
+    "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }
