@@ -3,7 +3,7 @@ const { test } = require("node:test");
 const prismaModule = require("../src/prismaClient");
 const prisma = { $transaction: () => { throw new Error("Unexpected database write"); } };
 prismaModule.default = prisma;
-const { fetchYoutubeCatalog, syncYoutubeCatalog, durationSeconds, validateParts } = require("../src/services/youtube.service");
+const { fetchYoutubeCatalog, syncYoutubeCatalog, durationSeconds, validateParts, startYoutubeSync } = require("../src/services/youtube.service");
 
 function response(items, nextPageToken) { return { ok: true, json: async () => ({ items, nextPageToken }) }; }
 function setup(t) {
@@ -105,4 +105,40 @@ test("validates split offsets, duplicate IDs, and duration formats", () => {
   for (const parts of [[{ videoId: "bad", streamOffsetSeconds: 0 }], [{ videoId: "aaaaaaaaaaa", streamOffsetSeconds: -1 }], [{ videoId: "aaaaaaaaaaa", streamOffsetSeconds: 0 }, { videoId: "aaaaaaaaaaa", streamOffsetSeconds: 10 }], [{ videoId: "aaaaaaaaaaa", streamOffsetSeconds: 0 }, { videoId: "bbbbbbbbbbb", streamOffsetSeconds: 0 }]]) {
     assert.throws(() => validateParts(parts));
   }
+});
+
+test("background sync survives 403, 500 and timeout failures and recovers on the next scheduled run", async (t) => {
+  setup(t);
+  let tick;
+  const timer = t.mock.method(globalThis, "setInterval", (callback, delay) => {
+    assert.equal(delay, 6 * 60 * 60 * 1000);
+    tick = callback;
+    return { unref() {} };
+  });
+  const errors = t.mock.method(console, "error", () => {});
+  const logs = t.mock.method(console, "log", () => {});
+  let failure = 403;
+  t.mock.method(globalThis, "fetch", async (url) => {
+    if (failure === "timeout") throw new Error("Timeout with test-key");
+    if (failure) return { ok: false, status: failure };
+    if (url.pathname.endsWith("channels")) return response([{ id: "UC-exact", contentDetails: { relatedPlaylists: { uploads: "UU-exact" } } }]);
+    return response([]);
+  });
+  const write = t.mock.method(prisma, "$transaction", async (callback) => callback({
+    $queryRaw: async () => [{ locked: true }],
+    youTubeVideo: { updateMany: async () => ({}), findMany: async () => [] },
+    stream: { findMany: async () => [] },
+  }));
+  startYoutubeSync();
+  await new Promise((resolve) => setImmediate(resolve));
+  for (failure of [500, "timeout"]) await tick();
+  assert.equal(errors.mock.callCount(), 3);
+  assert.equal(write.mock.callCount(), 0);
+  assert.ok(errors.mock.calls.every(({ arguments: args }) => !args.join(" ").includes("test-key")));
+  failure = null;
+  await tick();
+  assert.equal(write.mock.callCount(), 1);
+  assert.equal(logs.mock.callCount(), 1);
+  startYoutubeSync();
+  assert.equal(timer.mock.callCount(), 1);
 });

@@ -7,6 +7,19 @@ const { generateOrUpdateAISummary, testOpenAIConnection } = require("../src/serv
 
 const messages = [{ content: "Hyvä peli!", timestamp: new Date("2026-01-01") }];
 
+test("missing OpenAI configuration cannot crash module loading or collection", async (t) => {
+  const previous = process.env.OPENAI_API_KEY;
+  delete process.env.OPENAI_API_KEY;
+  const modulePath = require.resolve("../src/services/openai.service");
+  delete require.cache[modulePath];
+  t.after(() => { process.env.OPENAI_API_KEY = previous; });
+  const service = require(modulePath);
+  const request = t.mock.method(Completions.prototype, "create", async () => { throw new Error("Must not request"); });
+  assert.equal(await service.testOpenAIConnection(), false);
+  assert.equal(await service.generateOrUpdateAISummary("test", null, messages), null);
+  assert.equal(request.mock.callCount(), 0);
+});
+
 test("profile generation returns only complete, nonempty, unrefused text", async (t) => {
   const cases = [
     { name: "complete profile", finish_reason: "stop", content: "  Valmis profiili.  ", expected: "Valmis profiili." },

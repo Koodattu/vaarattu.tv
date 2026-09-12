@@ -45,7 +45,7 @@ export function getOAuthUrl(account: "streamer" | "bot") {
   return `https://id.twitch.tv/oauth2/authorize?${params.toString()}`;
 }
 
-export function startTwitchAuthServer(account: "streamer" | "bot") {
+export function startTwitchAuthServer(account: "streamer" | "bot", onAuthorized: () => void) {
   const app = express();
   const port = account === "streamer" ? 3001 : 3002;
   const tokenDataPath = getTokenPaths()[account];
@@ -65,18 +65,23 @@ export function startTwitchAuthServer(account: "streamer" | "bot") {
         throw new Error("Could not fetch user id");
       }
       fs.writeFileSync(tokenDataPath, JSON.stringify({ ...tokenData, id: userInfo.user_id, scope: scopes[account] }, null, 2));
-      res.send(`Twitch ${account} tokens saved! You can now stop this server and restart the app.`);
+      res.send(`Twitch ${account} connected. You can close this window.`);
       console.log(`Twitch ${account} tokens saved to`, tokenDataPath);
-      setTimeout(() => process.exit(0), 2000);
     } catch (err) {
       console.error("Failed to exchange code:", err);
       res.status(500).send("Failed to exchange code");
+      return;
     }
+    server.close();
+    onAuthorized();
   });
 
-  app.listen(port, () => {
+  const server = app.listen(port, () => {
     console.log(`Twitch auth server for ${account} running at http://localhost:${port}`);
     console.log(`Visit this URL to authorize your ${account} account:`);
     console.log(getOAuthUrl(account));
+  });
+  server.on("error", (error) => {
+    console.error(`Twitch ${account} OAuth server could not start:`, error.message);
   });
 }

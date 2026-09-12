@@ -1,8 +1,10 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let openai: OpenAI | undefined;
+
+function getOpenAIClient(): OpenAI {
+  return openai ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+}
 
 const SYSTEM_PROMPT = `Olet satiirinen Wikipedia-toimittaja, joka kirjoittaa huvittavia, liioiteltuja ja absurdeja henkilökuvia Twitch-chatin vakiokävijöistä. Analysoit käyttäjän viestejä löytääksesi persoonallisuuspiirteitä, mutta ET KOSKAAN lainaa tai toista viestejä suoraan.
 
@@ -76,7 +78,7 @@ export async function generateOrUpdateAISummary(
 
     userPrompt += `MUISTUTUS: Kirjoita satiirinen henkilökuva. ÄLÄ lainaa viestejä. Keskity persoonallisuuteen ja hauskaan kuvaukseen.`;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAIClient().chat.completions.create({
       model: "gpt-5.6-luna",
       reasoning_effort: "low",
       messages: [
@@ -137,7 +139,7 @@ export async function testOpenAIConnection(): Promise<boolean> {
   }
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAIClient().chat.completions.create({
       model: "gpt-5.6-luna",
       reasoning_effort: "low",
       messages: [

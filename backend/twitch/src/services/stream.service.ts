@@ -2,19 +2,12 @@ import prisma from "../prismaClient";
 import type { EventSubStreamOfflineEvent } from "@twurple/eventsub-base";
 import type { EventSubStreamOnlineEvent } from "@twurple/eventsub-base";
 import type { EventSubChannelUpdateEvent } from "@twurple/eventsub-base";
-import { syncChannelPointRewards } from "./channelReward.service";
+import { refreshChannelMetadata } from "./channelMetadata.service";
 import { streamState } from "./streamState.service";
 import { updateViewerAnalyticsForStream } from "./viewerProfileAnalytics.service";
-import { updateAvailableBadges } from "./twitchBadge.service";
-import { initializeEmotes } from "./emote.service";
 
 export async function processStreamOnlineEvent(event: EventSubStreamOnlineEvent) {
   console.log(`[EventSub] Processing stream online event for ${event.broadcasterName}`);
-  await syncChannelPointRewards();
-  await updateAvailableBadges();
-  await initializeEmotes();
-  console.log(`[EventSub] Synced channel point rewards, badges, and emotes on stream start`);
-
   const stream = await event.getStream();
   if (!stream) {
     console.warn(`[EventSub] No stream info found for streamer on stream start.`);
@@ -68,6 +61,7 @@ export async function processStreamOnlineEvent(event: EventSubStreamOnlineEvent)
 
   // Start tracking this stream in the stream state manager
   await streamState.startStream(dbStream.id);
+  refreshChannelMetadata();
 
   console.log(`[EventSub] Stream and initial segment tracked in DB, stream tracking started.`);
   return dbStream;

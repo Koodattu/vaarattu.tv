@@ -6,9 +6,8 @@ import { tryCreateChatClient } from "./twitch/api/chat";
 import { startEventSubWs } from "./twitch/api/eventsub";
 import { startTwitchAuthServer } from "./twitch/auth/dualAuthServer";
 import { getTokenPaths } from "./twitch/auth/authProviders";
-import { syncChannelPointRewards } from "./services/channelReward.service";
-import { updateAvailableBadges } from "./services/twitchBadge.service";
-import { initializeEmotes } from "./services/emote.service";
+import { refreshChannelMetadata } from "./services/channelMetadata.service";
+import { runBackgroundTask } from "./services/backgroundTask";
 import { testOpenAIConnection } from "./services/openai.service";
 import { startStreamStatusPolling } from "./twitch/api/streamPolling.service";
 import fs from "fs";
@@ -16,7 +15,7 @@ import { startYoutubeSync } from "./services/youtube.service";
 import prisma from "./prismaClient";
 import { registerChatHandlers } from "./twitch/api/chatHandlers";
 
-async function start() {
+export async function start() {
   // Check DB connection before anything else
   try {
     await prisma.$connect();
@@ -25,46 +24,39 @@ async function start() {
     console.error("Failed to connect to the database:", err);
     process.exit(1);
   }
-  const { streamer, bot } = getTokenPaths();
-  startYoutubeSync();
-  let missing = [];
-  if (!fs.existsSync(streamer)) missing.push("streamer");
-  if (!fs.existsSync(bot)) missing.push("bot");
-
-  if (missing.length > 0) {
-    for (const account of missing) {
-      startTwitchAuthServer(account as "streamer" | "bot");
+  const tokens = getTokenPaths();
+  let collecting = false;
+  let botStarted = false;
+  const startAvailableServices = () => {
+    if (!fs.existsSync(tokens.streamer)) return;
+    if (!collecting) {
+      collecting = true;
+      startStreamStatusPolling();
+      runBackgroundTask("EventSub", startEventSubWs);
+      refreshChannelMetadata();
     }
-    console.log(`Waiting for OAuth for: ${missing.join(", ")}`);
-    return;
-  }
-
-  try {
-    // Test OpenAI connection
-    await testOpenAIConnection();
-
-    await syncChannelPointRewards();
-    await updateAvailableBadges();
-    await initializeEmotes();
-
-    const chatClient = await tryCreateChatClient();
-    registerChatHandlers(chatClient);
-    await chatClient.connect();
-    console.log("Twitch chat client connected and listening.");
-    await startEventSubWs();
-
-    // Start periodic stream status polling to catch missed events
-    startStreamStatusPolling();
-
-    // Note: Chatter polling is now managed by the stream state manager
-    console.log("All Twitch services initialized successfully.");
-  } catch (err) {
-    if (err instanceof Error) {
-      console.error("Failed to start Twitch services:", err.message);
-    } else {
-      console.error("Failed to start Twitch services:", err);
+    if (!botStarted && fs.existsSync(tokens.bot)) {
+      botStarted = true;
+      runBackgroundTask("Twitch bot", async () => {
+        const chatClient = await tryCreateChatClient();
+        registerChatHandlers(chatClient);
+        await chatClient.connect();
+        console.log("Twitch chat client connected and listening.");
+      });
     }
+  };
+
+  startAvailableServices();
+  runBackgroundTask("YouTube", startYoutubeSync);
+  runBackgroundTask("OpenAI", testOpenAIConnection);
+
+  for (const account of ["streamer", "bot"] as const) {
+    if (fs.existsSync(tokens[account])) continue;
+    console.error(account === "streamer"
+      ? `Stream collection is blocked: streamer tokens are missing at ${tokens.streamer}. Complete streamer OAuth.`
+      : `Twitch bot is unavailable: tokens are missing at ${tokens.bot}. Streamer collection can run without the bot.`);
+    startTwitchAuthServer(account, startAvailableServices);
   }
 }
 
-start();
+if (require.main === module) void start();
