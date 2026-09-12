@@ -9,6 +9,9 @@ const streamController = new StreamController();
 // Query params: page, limit
 router.get("/", asyncHandler(streamController.getStreams.bind(streamController)));
 
+// Search must precede the dynamic stream ID route.
+router.get("/search", asyncHandler(streamController.searchStreams.bind(streamController)));
+
 // GET /api/streams/:id - Get single stream details
 router.get("/:id", asyncHandler(streamController.getStream.bind(streamController)));
 

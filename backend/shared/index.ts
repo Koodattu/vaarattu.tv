@@ -3,3 +3,4 @@ export { PrismaClient } from "@prisma/client";
 
 // Export generated types (these will be available after running prisma generate)
 export * from "@prisma/client";
+export { parseTitle, rankMatches, MatchStream, MatchVideo } from "./youtubeMatching";
