@@ -9,7 +9,7 @@ const rows = [
   { id: 2, startTime: new Date("2026-07-29T12:00:00Z"), endTime: null, segments: [{ title: "pushing 40(00 rio score)" }], youtubeVideos: [] },
   { id: 3, startTime: new Date("2026-07-09T12:00:00Z"), endTime: null, segments: [{ title: "split recording" }], youtubeVideos: [{ id: "aaaaaaaaaaa", title: "split recording osa 2", available: true, streamOffsetSeconds: 12000, durationSeconds: 5000, matchSource: "manual" }] },
 ];
-prismaModule.default = { stream: { findMany: async (query) => {
+prismaModule.default = { youTubeVideo: { findUnique: async () => ({ title: "9.7.2026 - pushing 40(00 rio score)" }) }, stream: { findMany: async (query) => {
   calls++; assert.equal(query.select.messages, undefined); return rows;
 } } };
 after(() => { prismaModule.default = original; });
@@ -61,4 +61,11 @@ test("public search route precedes the numeric ID route", async () => {
     assert.equal((await response.json()).data.matches[0].id, 3);
     assert.equal((await fetch(url + "?q=a&limit=999")).status, 400);
   } finally { await new Promise(resolve => server.close(resolve)); }
+});
+
+test("an indexed but unassigned YouTube ID can discover a stream from its stored title", async () => {
+  const result = await new StreamSearchService().search({ q: "", youtubeId: "bbbbbbbbbbb", limit: 10 });
+  assert.equal(result.suggestedStreamId, 1);
+  assert.equal(result.matches[0].identity, "likely");
+  assert.equal(result.matches[0].streamOffsetSeconds, null);
 });

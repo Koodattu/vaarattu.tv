@@ -38,7 +38,9 @@ export class StreamSearchService {
     const streams = await this.catalog;
     const exact = streams.find((stream) => stream.youtubeVideos.some((video) => video.id === query.youtubeId));
     const exactVideo = exact?.youtubeVideos.find((video) => video.id === query.youtubeId);
-    const title = query.q || exactVideo?.title || "";
+    const indexedVideo = !query.q && !exactVideo && query.youtubeId
+      ? await prisma.youTubeVideo.findUnique({ where: { id: query.youtubeId }, select: { title: true } }) : null;
+    const title = query.q || exactVideo?.title || indexedVideo?.title || "";
     const ranked = rankMatches(streams.map((stream) => ({
       ...stream, youtubeMatchLocked: false,
       segments: [...stream.segments, ...stream.youtubeVideos.map((video) => ({ title: video.title }))],
