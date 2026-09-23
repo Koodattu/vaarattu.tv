@@ -79,7 +79,7 @@ export async function generateOrUpdateAISummary(
     userPrompt += `MUISTUTUS: Kirjoita satiirinen henkilökuva. ÄLÄ lainaa viestejä. Keskity persoonallisuuteen ja hauskaan kuvaukseen.`;
 
     const completion = await getOpenAIClient().chat.completions.create({
-      model: "gpt-5.6-luna",
+      model: "gpt-6-luna",
       reasoning_effort: "low",
       messages: [
         {
@@ -140,7 +140,7 @@ export async function testOpenAIConnection(): Promise<boolean> {
 
   try {
     const completion = await getOpenAIClient().chat.completions.create({
-      model: "gpt-5.6-luna",
+      model: "gpt-6-luna",
       reasoning_effort: "low",
       messages: [
         {
