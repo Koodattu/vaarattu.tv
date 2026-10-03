@@ -41,6 +41,8 @@ clips. The importer splits windows reaching 900 results, deduplicates clip IDs,
 and checks previously saved missing IDs directly before marking them unavailable.
 It validates metadata and retrieves game names before writing. Parameterized
 upserts in 100-row batches and availability changes publish in one transaction.
+Creation and refresh timestamps use UTC explicitly, independent of the database
+session timezone. Each successful import also refreshes previously saved timestamps.
 Failed remote requests, repeated cursors, malformed metadata or failed database
 writes preserve the saved snapshot. Confirmed unavailable records stay stored;
 later reappearance restores them to browsing.

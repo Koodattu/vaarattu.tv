@@ -4,7 +4,8 @@ const { test } = require("node:test");
 
 test("Twitch clips become a searchable public catalog", { skip: !process.env.VOD_TEST_DATABASE_URL }, async t => {
   assert.equal(process.env.VOD_TEST_DATABASE_URL, "postgresql://postgres@127.0.0.1:55489/postgres");
-  process.env.DATABASE_URL = process.env.VOD_TEST_DATABASE_URL;
+  // One collector connection lets the regression exercise real session timezones.
+  process.env.DATABASE_URL = `${process.env.VOD_TEST_DATABASE_URL}?connection_limit=1`;
   const auth = require("../../twitch/dist/twitch/auth/authProviders");
   const twitch = require("../../twitch/dist/twitch/api/twitchApi");
   const { syncClips } = require("../../twitch/dist/services/clip.service");
@@ -42,6 +43,26 @@ test("Twitch clips become a searchable public catalog", { skip: !process.env.VOD
     assert.equal(response.status, 200);
     return response.json();
   };
+  await t.test("preserves UTC creation and refresh instants across database timezones and DST", async () => {
+    const dates = ["2026-01-01T12:00:00.123Z", "2026-07-01T12:00:00.456Z"];
+    try {
+      for (const timezone of ["UTC", "Europe/Helsinki", "America/New_York"]) {
+        await collectorPrisma.$queryRaw`SELECT set_config('TimeZone', ${timezone}, false)`;
+        pages.forEach((page, index) => { page.data[0].creationDate = new Date(dates[index]); });
+        const before = Date.now();
+        await syncClips();
+        const after = Date.now();
+        for (const [index, id] of ["ClipsTestA", "ClipsTestB"].entries()) {
+          const saved = (await read(`/${id}`)).data;
+          assert.equal(saved.createdAt, dates[index], `${id} in ${timezone}`);
+          assert.ok(Date.parse(saved.checkedAt) >= before && Date.parse(saved.checkedAt) <= after, `refresh time in ${timezone}`);
+        }
+      }
+    } finally {
+      await collectorPrisma.$queryRaw`SELECT set_config('TimeZone', 'UTC', false)`;
+      pages.forEach(page => { page.data[0].creationDate = new Date("2026-10-01T12:00:00Z"); });
+    }
+  });
   await t.test("imports every page and exposes exact totals, categories and stable popular order", async () => {
     await syncClips();
     const result = await read("?limit=1&q=deep%20rock");
