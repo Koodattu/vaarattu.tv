@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { LeaderboardReward, TimeRange } from "@/types/api";
+import { TimeRange } from "@/types/api";
 import { apiClient } from "@/lib/api";
+import { useApiQuery } from "@/hooks/useApiQuery";
+import { Pagination } from "@/components/Pagination";
 
 const TIME_RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
   { value: "all", label: "All Time" },
@@ -30,32 +32,11 @@ function RewardsLeaderboardContent() {
   const initialTimeRange = (searchParams.get("timeRange") as TimeRange) || "all";
 
   const [timeRange, setTimeRange] = useState<TimeRange>(initialTimeRange);
-  const [rewards, setRewards] = useState<LeaderboardReward[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
   const pageSize = 25;
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-
-      const response = await apiClient.getTopRewards(timeRange, page, pageSize);
-
-      if (response.success && response.data) {
-        setRewards(response.data);
-        setHasMore(response.data.length === pageSize);
-      } else {
-        setError(response.error || "Failed to load leaderboard");
-      }
-
-      setLoading(false);
-    };
-
-    fetchData();
-  }, [timeRange, page]);
+  const { response, loading, retry } = useApiQuery(useCallback((signal: AbortSignal) => apiClient.getTopRewards(timeRange, page, pageSize, signal), [timeRange, page]));
+  const rewards = response?.data ?? [];
+  const error = response?.error;
 
   const handleTimeRangeChange = (newRange: TimeRange) => {
     setTimeRange(newRange);
@@ -79,12 +60,13 @@ function RewardsLeaderboardContent() {
         </div>
 
         {/* Time Range Selector */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {TIME_RANGE_OPTIONS.map((option) => (
             <button
               key={option.value}
+              aria-pressed={timeRange === option.value}
               onClick={() => handleTimeRangeChange(option.value)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`min-h-11 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 timeRange === option.value ? "bg-purple-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"
               }`}
             >
@@ -102,9 +84,10 @@ function RewardsLeaderboardContent() {
       )}
 
       {error && (
-        <div className="bg-red-900/30 border border-red-700 rounded-lg p-6 text-center">
+        <div role="alert" className="bg-red-900/30 border border-red-700 rounded-lg p-6 text-center">
           <p className="text-red-400 mb-2">Failed to load leaderboard</p>
-          <p className="text-gray-500 text-sm">{error}</p>
+          <p className="text-gray-300 text-sm">{error}</p>
+          <button type="button" onClick={retry} className="mt-3 min-h-11 rounded-md bg-gray-700 px-4 py-2 text-white hover:bg-gray-600">Try again</button>
         </div>
       )}
 
@@ -146,24 +129,7 @@ function RewardsLeaderboardContent() {
             )}
           </div>
 
-          {/* Pagination */}
-          <div className="flex justify-center gap-4 mt-8">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="px-6 py-2 bg-gray-800 text-gray-300 rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Previous
-            </button>
-            <span className="px-6 py-2 text-gray-400">Page {page}</span>
-            <button
-              onClick={() => setPage((p) => p + 1)}
-              disabled={!hasMore}
-              className="px-6 py-2 bg-gray-800 text-gray-300 rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Next
-            </button>
-          </div>
+          <Pagination page={page} totalPages={response?.pagination?.totalPages ?? page} disabled={loading} onPageChange={setPage} />
         </>
       )}
     </div>

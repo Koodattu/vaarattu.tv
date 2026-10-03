@@ -2,6 +2,10 @@
 
 Backend API server for the vaarattu.tv website, providing data endpoints for leaderboards, user profiles, streams, and moderation tools.
 
+For development without external credentials, follow the [isolated local testing guide](../../docs/local-testing.md).
+`npm test` runs the existing unit tests and the guarded PostgreSQL integration suites.
+Database tests skip unless `VOD_TEST_DATABASE_URL` points to the dedicated disposable database described there.
+
 ## 🚀 Getting Started
 
 ### Development
@@ -23,10 +27,6 @@ npm start
 The server will start on port 3001 (configurable via `WEB_API_PORT` environment variable).
 
 ## 📋 API Endpoints
-
-### Health Check
-
-- `GET /health` - Basic health check
 
 ### Leaderboards
 
@@ -50,7 +50,7 @@ The server will start on port 3001 (configurable via `WEB_API_PORT` environment 
 
 ### Moderation (Future: Auth Required)
 
-- `GET /api/mod/users/:userId/messages` - Get all messages from a specific user
+- `GET /api/mod/users/:userId/messages` - Get a page of messages from a specific user
   - Query: `search=text`, `streamId=number` (optional filters)
 - `GET /api/mod/messages/search` - Search messages across all users
   - Query: `search=text` (required), `streamId=number`, `userId=number` (optional filters)
@@ -61,6 +61,12 @@ All list endpoints support pagination:
 
 - `page=number` (default: 1)
 - `limit=number` (default: 20, max: 100)
+
+Pages, limits and IDs must be positive integers. Malformed numbers, repeated
+filter values and unsupported sort/time-range values return HTTP 400. Search
+text is trimmed and limited to 300 characters. Emote rankings are all-time
+because emote usage records have no timestamps; their platform filter applies
+before pagination, and totals include only emotes with recorded usage.
 
 ## 📊 Response Format
 
@@ -104,7 +110,7 @@ src/
 
 - Twitch OAuth authentication for user-specific data
 - Role-based access control (mod-only endpoints)
-- Rate limiting and request validation
+- Rate limiting
 - OpenAPI/Swagger documentation
 - Caching for frequently accessed data
 - Real-time updates via WebSockets

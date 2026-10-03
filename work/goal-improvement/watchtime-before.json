@@ -1,0 +1,14 @@
+{
+  "workload": "50 viewers x 200 completed one-minute sessions (10,000 rows), top 10 past week",
+  "database": "PostgreSQL 17.10, Docker 1 CPU/384MiB, localhost",
+  "firstMs": 42.22,
+  "warmMs": [
+    38.92,
+    37.59,
+    36.2,
+    33.03,
+    37.19,
+    35.44
+  ],
+  "medianWarmMs": 36.695
+}

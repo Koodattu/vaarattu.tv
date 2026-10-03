@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { UserProfile } from "@/types/api";
+import { useApiQuery } from "@/hooks/useApiQuery";
 import { apiClient } from "@/lib/api";
 import { formatDuration, formatRelativeTime, formatDate } from "@/lib/utils";
 
@@ -18,16 +18,6 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function StatBadge({ icon, label, value }: { icon: string; label: string; value: string | number }) {
-  return (
-    <div className="bg-gray-700/50 rounded-lg p-3 text-center">
-      <div className="text-2xl mb-1">{icon}</div>
-      <div className="text-white font-bold">{value}</div>
-      <div className="text-gray-500 text-xs">{label}</div>
-    </div>
-  );
-}
-
 function TopItemCard({ rank, name, imageUrl, subtitle, stat }: { rank: number; name: string; imageUrl?: string | null; subtitle?: string; stat: string }) {
   const rankEmoji = rank === 1 ? "🥇" : rank === 2 ? "🥈" : "🥉";
   return (
@@ -36,7 +26,7 @@ function TopItemCard({ rank, name, imageUrl, subtitle, stat }: { rank: number; n
       {imageUrl && <Image src={imageUrl} alt={name} width={28} height={28} className="rounded object-contain" />}
       <div className="flex-1 min-w-0">
         <div className="text-white text-sm font-medium truncate">{name}</div>
-        {subtitle && <div className="text-gray-500 text-xs">{subtitle}</div>}
+        {subtitle && <div className="text-gray-400 text-xs">{subtitle}</div>}
       </div>
       <div className="text-gray-400 text-xs">{stat}</div>
     </div>
@@ -47,28 +37,9 @@ export default function ProfilePage() {
   const params = useParams();
   const login = params.login as string;
 
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      setLoading(true);
-      setError(null);
-
-      const response = await apiClient.getUserProfileByLogin(login);
-
-      if (response.success && response.data) {
-        setProfile(response.data);
-      } else {
-        setError(response.error || "Failed to load profile");
-      }
-
-      setLoading(false);
-    };
-
-    fetchProfile();
-  }, [login]);
+  const { response, loading, retry } = useApiQuery(useCallback((signal: AbortSignal) => apiClient.getUserProfileByLogin(login, signal), [login]));
+  const profile = response?.data;
+  const error = response?.error;
 
   if (loading) {
     return (
@@ -87,10 +58,11 @@ export default function ProfilePage() {
         <Link href="/profiles" className="text-purple-400 hover:text-purple-300 transition-colors mb-6 inline-block">
           ← Back to Profiles
         </Link>
-        <div className="bg-red-900/30 border border-red-700 rounded-lg p-6 text-center">
+        <div role="alert" className="bg-red-900/30 border border-red-700 rounded-lg p-6 text-center">
           <div className="text-6xl mb-4">😢</div>
-          <p className="text-red-400 mb-2">Profile not found</p>
-          <p className="text-gray-500 text-sm">{error || "User does not exist"}</p>
+          <p className="text-red-400 mb-2">Unable to load profile</p>
+          <p className="text-gray-300 text-sm">{error || "User does not exist"}</p>
+          <button type="button" onClick={retry} className="mt-3 min-h-11 rounded-md bg-gray-700 px-4 py-2 text-white hover:bg-gray-600">Try again</button>
         </div>
       </div>
     );
@@ -113,7 +85,7 @@ export default function ProfilePage() {
       {/* Wikipedia-style layout */}
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Left column - AI Summary / Bio */}
-        <div className="flex-1 order-2 lg:order-1">
+        <div className="min-w-0 flex-1 order-1">
           {/* Mobile: Show header here */}
           <div className="lg:hidden mb-6">
             <div className="flex items-center gap-4 mb-4">
@@ -148,10 +120,10 @@ export default function ProfilePage() {
             {profile.aiSummary ? (
               <div className="prose prose-invert max-w-none">
                 <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{profile.aiSummary}</p>
-                {profile.aiSummaryLastUpdate && <p className="text-gray-600 text-xs mt-4">Last updated {formatRelativeTime(profile.aiSummaryLastUpdate)}</p>}
+                {profile.aiSummaryLastUpdate && <p className="text-gray-400 text-xs mt-4">Last updated {formatRelativeTime(profile.aiSummaryLastUpdate)}</p>}
               </div>
             ) : (
-              <p className="text-gray-500 italic">No summary available yet. Check back after more chat activity!</p>
+              <p className="text-gray-400 italic">No summary available yet. Check back after more chat activity!</p>
             )}
           </div>
 
@@ -217,8 +189,8 @@ export default function ProfilePage() {
         </div>
 
         {/* Right column - Info Table (Wikipedia style) */}
-        <div className="w-full lg:w-80 order-1 lg:order-2">
-          <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden sticky top-4">
+        <div className="w-full lg:w-80 lg:shrink-0 order-2">
+          <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden lg:sticky lg:top-24">
             {/* Desktop header image */}
             <div className="hidden lg:block bg-gradient-to-b from-purple-900/50 to-gray-800 p-6 text-center">
               {profile.avatar ? (
@@ -295,19 +267,19 @@ export default function ProfilePage() {
                 href={`https://twitch.tv/${profile.login}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block w-full text-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-sm font-medium transition-colors"
+                className="flex min-h-11 w-full items-center justify-center text-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-sm font-medium transition-colors"
               >
                 View on Twitch
               </a>
               <Link
                 href={`/profiles/${profile.login}/timelines`}
-                className="block w-full text-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md text-sm font-medium transition-colors"
+                className="flex min-h-11 w-full items-center justify-center text-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md text-sm font-medium transition-colors"
               >
                 View Timelines
               </Link>
               <Link
                 href={`/profiles/${profile.login}/chat-history`}
-                className="block w-full text-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md text-sm font-medium transition-colors"
+                className="flex min-h-11 w-full items-center justify-center text-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md text-sm font-medium transition-colors"
               >
                 View Chat History
               </Link>

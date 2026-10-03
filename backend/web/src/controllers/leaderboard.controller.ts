@@ -1,16 +1,13 @@
 import { Request, Response } from "express";
+import { parsePositiveInteger, parseTextQuery, parseChoice } from "../utils/validation";
 import { LeaderboardService, TimeRange } from "../services/leaderboard.service";
 import { ApiResponse } from "../types/api.types";
 import { parsePaginationQuery, createPaginationInfo } from "../utils/pagination";
 
 const leaderboardService = new LeaderboardService();
 
-function parseTimeRange(query: any): TimeRange {
-  const range = query.timeRange as string;
-  if (range === "year" || range === "month" || range === "week") {
-    return range;
-  }
-  return "all";
+function parseTimeRange(query: Record<string, unknown>): TimeRange {
+  return parseChoice(query.timeRange, "time range", ["all", "year", "month", "week"] as const, "all");
 }
 
 export class LeaderboardController {
@@ -28,7 +25,7 @@ export class LeaderboardController {
   async getTopEmotes(req: Request, res: Response<ApiResponse>) {
     const { page, limit } = parsePaginationQuery(req.query);
     const timeRange = parseTimeRange(req.query);
-    const platform = req.query.platform as string | undefined;
+    const platform = parseTextQuery(req.query.platform, "Platform", 40);
 
     const { emotes, total } = await leaderboardService.getTopEmotes(page, limit, timeRange, platform);
 
@@ -50,7 +47,7 @@ export class LeaderboardController {
 
   async getTopUsers(req: Request, res: Response<ApiResponse>) {
     const { page, limit } = parsePaginationQuery(req.query);
-    const sortBy = req.query.sortBy as "messages" | "watchtime" | "points" | undefined;
+    const sortBy = parseChoice(req.query.sortBy, "sort order", ["messages", "watchtime", "points"] as const, "messages");
     const timeRange = parseTimeRange(req.query);
 
     const { users, total } = await leaderboardService.getTopUsers(page, limit, sortBy, timeRange);
@@ -102,13 +99,7 @@ export class LeaderboardController {
   }
 
   async getRewardLeaderboard(req: Request, res: Response<ApiResponse>) {
-    const rewardId = parseInt(req.params.rewardId);
-    if (isNaN(rewardId)) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid reward ID",
-      });
-    }
+    const rewardId = parsePositiveInteger(req.params.rewardId, "ID");
 
     const { page, limit } = parsePaginationQuery(req.query);
     const timeRange = parseTimeRange(req.query);

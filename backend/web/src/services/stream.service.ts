@@ -1,10 +1,21 @@
 import prisma from "../prismaClient";
+import { Prisma } from "@vaarattu/shared";
 import { StreamListItem, StreamDetail, StreamTimeline } from "../types/api.types";
 import { calculateOffset } from "../utils/pagination";
 import { ActivityMinute, buildStreamActivity } from "../utils/streamActivity";
 import { twitchRecordingAvailable } from "../utils/recordingPlayback";
 
 export class StreamService {
+  private async getUniqueViewerCounts(streamIds: number[]): Promise<Map<number, number>> {
+    if (streamIds.length === 0) return new Map();
+    const counts = await prisma.$queryRaw<Array<{ streamId: number; viewers: number }>>`
+      SELECT "streamId", COUNT(DISTINCT "userId")::int AS viewers
+      FROM "ViewSession" WHERE "streamId" IN (${Prisma.join(streamIds)})
+      GROUP BY "streamId"
+    `;
+    return new Map(counts.map(row => [row.streamId, row.viewers]));
+  }
+
   async getStreamActivity(streamId: number) {
     const stream = await prisma.stream.findUnique({
       where: { id: streamId },
@@ -59,7 +70,6 @@ export class StreamService {
             select: {
               messages: true,
               redemptions: true,
-              viewSessions: true,
             },
           },
           segments: {
@@ -83,6 +93,7 @@ export class StreamService {
       prisma.stream.count(),
     ]);
 
+    const viewerCounts = await this.getUniqueViewerCounts(streams.map(stream => stream.id));
     const formattedStreams: StreamListItem[] = streams.map((stream) => {
       const duration = stream.endTime ? Math.round((stream.endTime.getTime() - stream.startTime.getTime()) / (1000 * 60)) : null;
 
@@ -95,7 +106,7 @@ export class StreamService {
         thumbnailUrl: stream.youtubeVideos[0]?.thumbnailUrl || stream.thumbnailUrl,
         totalMessages: stream._count.messages,
         totalRedemptions: stream._count.redemptions,
-        uniqueViewers: stream._count.viewSessions,
+        uniqueViewers: viewerCounts.get(stream.id) ?? 0,
         segments: stream.segments.map((segment) => {
           const segmentDuration = segment.endTime ? Math.round((segment.endTime.getTime() - segment.startTime.getTime()) / (1000 * 60)) : null;
 
@@ -134,7 +145,6 @@ export class StreamService {
           select: {
             messages: true,
             redemptions: true,
-            viewSessions: true,
           },
         },
         segments: {
@@ -173,7 +183,7 @@ export class StreamService {
       thumbnailUrl: stream.thumbnailUrl,
       totalMessages: stream._count.messages,
       totalRedemptions: stream._count.redemptions,
-      uniqueViewers: stream._count.viewSessions,
+      uniqueViewers: (await this.getUniqueViewerCounts([stream.id])).get(stream.id) ?? 0,
       segments: stream.segments.map((segment) => {
         const segmentDuration = segment.endTime ? Math.round((segment.endTime.getTime() - segment.startTime.getTime()) / (1000 * 60)) : null;
 
@@ -202,7 +212,6 @@ export class StreamService {
           select: {
             messages: true,
             redemptions: true,
-            viewSessions: true,
           },
         },
         segments: {
@@ -243,8 +252,9 @@ export class StreamService {
 
     const duration = stream.endTime ? Math.round((stream.endTime.getTime() - stream.startTime.getTime()) / (1000 * 60)) : null;
 
-    // Calculate peak viewers (simplified - count overlapping sessions)
-    const peakViewers = this.calculatePeakViewers(stream.viewSessions);
+    const audience = buildStreamActivity(stream.startTime, stream.endTime ?? new Date(),
+      stream.viewSessions.map(session => ({ ...session, userId: session.user.id })), []);
+    const peakViewers = Math.max(0, ...audience.points.map(point => point.viewers ?? 0));
 
     return {
       id: stream.id,
@@ -280,40 +290,10 @@ export class StreamService {
       stats: {
         totalMessages: stream._count.messages,
         totalRedemptions: stream._count.redemptions,
-        uniqueViewers: stream._count.viewSessions,
+        uniqueViewers: new Set(stream.viewSessions.map(session => session.user.id)).size,
         peakViewers,
       },
     };
   }
 
-  private calculatePeakViewers(sessions: Array<{ sessionStart: Date; sessionEnd: Date | null }>): number {
-    // Simple algorithm: find the maximum number of overlapping sessions
-    // This is a simplified version - could be optimized for large datasets
-
-    const events: Array<{ time: Date; type: "start" | "end" }> = [];
-
-    sessions.forEach((session) => {
-      events.push({ time: session.sessionStart, type: "start" });
-      if (session.sessionEnd) {
-        events.push({ time: session.sessionEnd, type: "end" });
-      }
-    });
-
-    // Sort events by time
-    events.sort((a, b) => a.time.getTime() - b.time.getTime());
-
-    let currentViewers = 0;
-    let peakViewers = 0;
-
-    events.forEach((event) => {
-      if (event.type === "start") {
-        currentViewers++;
-        peakViewers = Math.max(peakViewers, currentViewers);
-      } else {
-        currentViewers--;
-      }
-    });
-
-    return peakViewers;
-  }
 }

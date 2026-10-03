@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  LeaderboardSummary,
   LeaderboardUser,
   LeaderboardEmote,
   LeaderboardReward,
@@ -14,6 +13,7 @@ import {
   TimeRange,
 } from "@/types/api";
 import { apiClient } from "@/lib/api";
+import { useApiQuery } from "@/hooks/useApiQuery";
 import { formatDuration } from "@/lib/utils";
 
 const TIME_RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
@@ -46,7 +46,7 @@ interface LeaderboardCardProps {
 function LeaderboardCard({ title, icon, href, children }: LeaderboardCardProps) {
   return (
     <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
         <h3 className="text-lg font-semibold text-white flex items-center gap-2">
           <span>{icon}</span>
           {title}
@@ -66,7 +66,7 @@ function UserRow({ user, rank, value, label }: { user: LeaderboardUser; rank: nu
       <span className="w-8 text-center text-lg">{getRankBadge(rank)}</span>
       {user.avatar && <Image src={user.avatar} alt={user.displayName} width={32} height={32} className="rounded-full" />}
       <div className="flex-1 min-w-0">
-        <div className="text-white font-medium truncate">{user.displayName}</div>
+        <Link href={`/profiles/${encodeURIComponent(user.login)}`} className="block truncate text-purple-300 font-medium hover:underline">{user.displayName}</Link>
       </div>
       <div className="text-right">
         <div className="text-white font-medium">{value}</div>
@@ -116,7 +116,7 @@ function GiftRow({ gifter, rank }: { gifter: LeaderboardSubscriptionGift; rank: 
       <span className="w-8 text-center text-lg">{getRankBadge(rank)}</span>
       {gifter.avatar && <Image src={gifter.avatar} alt={gifter.displayName} width={32} height={32} className="rounded-full" />}
       <div className="flex-1 min-w-0">
-        <div className="text-white font-medium truncate">{gifter.displayName}</div>
+        <Link href={`/profiles/${encodeURIComponent(gifter.login)}`} className="block truncate text-purple-300 font-medium hover:underline">{gifter.displayName}</Link>
       </div>
       <div className="text-right">
         <div className="text-white font-medium">{formatNumber(gifter.totalGiftedSubs)}</div>
@@ -132,7 +132,7 @@ function CheerRow({ cheer, rank }: { cheer: LeaderboardCheer; rank: number }) {
       <span className="w-8 text-center text-lg">{getRankBadge(rank)}</span>
       {cheer.avatar && <Image src={cheer.avatar} alt={cheer.displayName} width={32} height={32} className="rounded-full" />}
       <div className="flex-1 min-w-0">
-        <div className="text-white font-medium truncate">{cheer.displayName}</div>
+        <Link href={`/profiles/${encodeURIComponent(cheer.login)}`} className="block truncate text-purple-300 font-medium hover:underline">{cheer.displayName}</Link>
       </div>
       <div className="text-right">
         <div className="text-white font-medium">{formatNumber(cheer.totalBits)}</div>
@@ -158,7 +158,7 @@ function RewardLeaderboardCard({ leaderboard }: { leaderboard: RewardUserLeaderb
         {users.map((user, index) => (
           <div key={user.id} className="flex items-center gap-2 text-sm">
             <span className="w-6 text-center">{getRankBadge(index + 1)}</span>
-            <span className="text-white flex-1 truncate">{user.displayName}</span>
+            <Link href={`/profiles/${encodeURIComponent(user.login)}`} className="text-purple-300 flex-1 truncate hover:underline">{user.displayName}</Link>
             <span className="text-gray-400">{user.redemptionCount}x</span>
           </div>
         ))}
@@ -169,33 +169,11 @@ function RewardLeaderboardCard({ leaderboard }: { leaderboard: RewardUserLeaderb
 
 export default function LeaderboardsPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>("all");
-  const [summary, setSummary] = useState<LeaderboardSummary | null>(null);
-  const [rewardLeaderboards, setRewardLeaderboards] = useState<RewardUserLeaderboard[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-
-      const [summaryRes, rewardsRes] = await Promise.all([apiClient.getLeaderboardSummary(timeRange), apiClient.getAllRewardLeaderboards(timeRange)]);
-
-      if (summaryRes.success && summaryRes.data) {
-        setSummary(summaryRes.data);
-      } else {
-        setError(summaryRes.error || "Failed to load leaderboards");
-      }
-
-      if (rewardsRes.success && rewardsRes.data) {
-        setRewardLeaderboards(rewardsRes.data);
-      }
-
-      setLoading(false);
-    };
-
-    fetchData();
-  }, [timeRange]);
+  const { response, loading, retry } = useApiQuery(useCallback((signal: AbortSignal) => apiClient.getLeaderboardSummary(timeRange, signal), [timeRange]));
+  const rewards = useApiQuery(useCallback((signal: AbortSignal) => apiClient.getAllRewardLeaderboards(timeRange, signal), [timeRange]));
+  const summary = response?.data;
+  const error = response?.error;
+  const rewardLeaderboards = rewards.response?.data ?? [];
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -207,12 +185,13 @@ export default function LeaderboardsPage() {
         </div>
 
         {/* Time Range Selector */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {TIME_RANGE_OPTIONS.map((option) => (
             <button
               key={option.value}
+              aria-pressed={timeRange === option.value}
               onClick={() => setTimeRange(option.value)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`min-h-11 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 timeRange === option.value ? "bg-purple-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"
               }`}
             >
@@ -230,16 +209,17 @@ export default function LeaderboardsPage() {
       )}
 
       {error && (
-        <div className="bg-red-900/30 border border-red-700 rounded-lg p-6 text-center">
-          <p className="text-red-400 mb-2">Failed to load leaderboards</p>
-          <p className="text-gray-500 text-sm">{error}</p>
+        <div role="alert" className="bg-red-900/30 border border-red-700 rounded-lg p-6 text-center">
+          <p className="text-red-300 mb-2">Failed to load leaderboards</p>
+          <p className="text-gray-300 text-sm">{error}</p>
+          <button onClick={retry} className="min-h-11 mt-3 rounded-md bg-gray-700 px-4 py-2 text-white hover:bg-gray-600">Try again</button>
         </div>
       )}
 
       {!loading && !error && summary && (
         <>
           {/* Main Leaderboards Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             {/* Top Watchtime */}
             <LeaderboardCard title="Most Watchtime" icon="⏱️" href={`/leaderboards/watchtime?timeRange=${timeRange}`}>
               {summary.topWatchtime.length === 0 ? (
@@ -268,7 +248,7 @@ export default function LeaderboardsPage() {
             </LeaderboardCard>
 
             {/* Top Emotes */}
-            <LeaderboardCard title="Popular Emotes" icon="😂" href={`/leaderboards/emotes?timeRange=${timeRange}`}>
+            <LeaderboardCard title="Popular Emotes · All Time" icon="😂" href="/leaderboards/emotes">
               {summary.topEmotes.length === 0 ? (
                 <p className="text-gray-500 text-sm">No data yet</p>
               ) : (
@@ -304,8 +284,18 @@ export default function LeaderboardsPage() {
             </LeaderboardCard>
           </div>
 
-          {/* Per-Reward Leaderboards */}
-          {rewardLeaderboards.length > 0 && (
+        </>
+      )}
+
+      {rewards.loading && <p role="status" className="text-gray-400">Loading reward rankings…</p>}
+      {rewards.response?.error && (
+        <div role="alert" className="rounded-lg border border-red-700 bg-red-900/30 p-6">
+          <p className="text-red-300">Unable to load reward rankings</p>
+          <p className="text-gray-300 text-sm mt-2">{rewards.response.error}</p>
+          <button onClick={rewards.retry} className="min-h-11 mt-3 rounded-md bg-gray-700 px-4 py-2 text-white hover:bg-gray-600">Retry rewards</button>
+        </div>
+      )}
+      {rewardLeaderboards.length > 0 && (
             <div className="mt-12">
               <h2 className="text-2xl font-bold text-white mb-6">Reward Champions</h2>
               <p className="text-gray-400 mb-6">See who&apos;s redeemed each channel point reward the most</p>
@@ -315,8 +305,6 @@ export default function LeaderboardsPage() {
                 ))}
               </div>
             </div>
-          )}
-        </>
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import prisma from "../prismaClient";
+import { Prisma } from "@vaarattu/shared";
 import {
   LeaderboardCheer,
   LeaderboardEmote,
@@ -54,70 +55,28 @@ export class LeaderboardService {
   }
 
   async getTopEmotes(page: number, limit: number, timeRange: TimeRange = "all", platform?: string): Promise<{ emotes: LeaderboardEmote[]; total: number }> {
-    const offset = calculateOffset(page, limit);
-
-    // Note: EmoteUsage doesn't have timestamps in current schema, so time range won't affect emotes
-    // For now, just filter by platform if specified
-
-    const whereClause: any = {};
-    if (platform) {
-      whereClause.platform = platform;
-    }
-
-    // Get emote usage counts by aggregating the sum of counts from EmoteUsage
-    const emoteUsageSums = await prisma.emoteUsage.groupBy({
-      by: ["emoteId"],
-      _sum: {
-        count: true,
-      },
-      orderBy: {
-        _sum: {
-          count: "desc",
-        },
-      },
-    });
-
-    // Create a map of emoteId to total usage count
-    const usageMap = new Map(emoteUsageSums.map((item) => [item.emoteId, item._sum.count || 0]));
-
-    // Get emote IDs in the correct order
-    const emoteIds = emoteUsageSums.map((item) => item.emoteId);
-
-    // Apply pagination and platform filter
-    const filteredEmoteIds = emoteIds.slice(offset, offset + limit);
-
-    // Fetch emote details
+    // EmoteUsage has no timestamp; these rankings are always all-time.
+    const [usage, total] = await Promise.all([
+      prisma.emoteUsage.groupBy({
+        by: ["emoteId"],
+        where: { emote: { platform } },
+        _sum: { count: true },
+        orderBy: [{ _sum: { count: "desc" } }, { emoteId: "asc" }],
+        skip: calculateOffset(page, limit),
+        take: limit,
+      }),
+      prisma.emote.count({ where: { platform, emoteUsages: { some: {} } } }),
+    ]);
     const emotes = await prisma.emote.findMany({
-      where: {
-        id: { in: filteredEmoteIds },
-        ...whereClause,
-      },
-      select: {
-        id: true,
-        name: true,
-        platform: true,
-        imageUrl: true,
-      },
+      where: { id: { in: usage.map(row => row.emoteId) } },
+      select: { id: true, name: true, platform: true, imageUrl: true },
     });
-
-    // Sort emotes by usage count (maintain order from aggregation)
-    const emoteMap = new Map(emotes.map((e) => [e.id, e]));
-    const sortedEmotes = filteredEmoteIds.map((id) => emoteMap.get(id)).filter((e): e is NonNullable<typeof e> => e !== undefined);
-
-    const formattedEmotes: LeaderboardEmote[] = sortedEmotes.map((emote) => ({
-      id: emote.id,
-      name: emote.name,
-      platform: emote.platform,
-      imageUrl: emote.imageUrl,
-      totalUsage: usageMap.get(emote.id) || 0,
-    }));
-
-    // Get total count
-    const total = await prisma.emote.count({ where: whereClause });
-
-    return { emotes: formattedEmotes, total };
+    const emoteMap = new Map(emotes.map(emote => [emote.id, emote]));
+    return {
+      emotes: usage.map(row => ({ ...emoteMap.get(row.emoteId)!, totalUsage: row._sum.count ?? 0 })),
+      total,
+    };
   }
-
   async getTopUsers(
     page: number,
     limit: number,
@@ -138,7 +97,7 @@ export class LeaderboardService {
   private async getTopUsersFromProfile(page: number, limit: number, sortBy: "messages" | "watchtime" | "points"): Promise<{ users: LeaderboardUser[]; total: number }> {
     const offset = calculateOffset(page, limit);
 
-    let orderBy: any;
+    let orderBy: Prisma.UserOrderByWithRelationInput;
     switch (sortBy) {
       case "watchtime":
         orderBy = { viewerProfile: { totalWatchTime: "desc" } };
@@ -172,7 +131,7 @@ export class LeaderboardService {
             isNot: null,
           },
         },
-        orderBy,
+        orderBy: [orderBy, { id: "asc" }],
         skip: offset,
         take: limit,
       }),
@@ -215,7 +174,7 @@ export class LeaderboardService {
           timestamp: { gte: startDate },
         },
         _count: { id: true },
-        orderBy: { _count: { id: "desc" } },
+        orderBy: [{ _count: { id: "desc" } }, { userId: "asc" }],
         skip: calculateOffset(page, limit),
         take: limit,
       });
@@ -259,31 +218,28 @@ export class LeaderboardService {
     }
 
     if (sortBy === "watchtime") {
-      const sessions = await prisma.viewSession.findMany({
-        where: {
-          sessionStart: { gte: startDate },
-          sessionEnd: { not: null },
-        },
-        select: {
-          userId: true,
-          sessionStart: true,
-          sessionEnd: true,
-        },
-      });
-
-      // Aggregate watchtime per user
-      const watchtimeMap = new Map<number, number>();
-      sessions.forEach((session) => {
-        if (session.sessionEnd) {
-          const duration = (session.sessionEnd.getTime() - session.sessionStart.getTime()) / (1000 * 60);
-          watchtimeMap.set(session.userId, (watchtimeMap.get(session.userId) || 0) + duration);
-        }
-      });
-
-      const sorted = Array.from(watchtimeMap.entries())
-        .sort((a, b) => b[1] - a[1])
-        .slice(calculateOffset(page, limit), calculateOffset(page, limit) + limit);
-
+      const endDate = new Date();
+      // UTC text avoids session-timezone shifts for Prisma's timestamp columns.
+      const completedSessions = Prisma.sql`
+        FROM "ViewSession"
+        WHERE "sessionStart" < ${endDate.toISOString()}::timestamp
+          AND "sessionEnd" > ${startDate.toISOString()}::timestamp
+          AND "sessionEnd" > "sessionStart"
+      `;
+      const [ranking, totals] = await Promise.all([
+        prisma.$queryRaw<Array<{ userId: number; watchtime: number }>>`
+          SELECT "userId", (SUM(EXTRACT(EPOCH FROM (
+            LEAST("sessionEnd", ${endDate.toISOString()}::timestamp) -
+            GREATEST("sessionStart", ${startDate.toISOString()}::timestamp)
+          ))) / 60)::double precision AS watchtime
+          ${completedSessions}
+          GROUP BY "userId"
+          ORDER BY watchtime DESC, "userId" ASC
+          LIMIT ${limit} OFFSET ${calculateOffset(page, limit)}
+        `,
+        prisma.$queryRaw<Array<{ total: number }>>`SELECT COUNT(DISTINCT "userId")::int AS total ${completedSessions}`,
+      ]);
+      const sorted = ranking.map(({ userId, watchtime }) => [userId, watchtime] as const);
       const userIds = sorted.map(([userId]) => userId);
       const users = await prisma.user.findMany({
         where: { id: { in: userIds } },
@@ -313,7 +269,7 @@ export class LeaderboardService {
             totalRedemptions: 0,
           };
         }),
-        total: watchtimeMap.size,
+        total: totals[0].total,
       };
     }
 
@@ -432,7 +388,7 @@ export class LeaderboardService {
       where: whereClause,
       _sum: { amount: true },
       _count: { id: true },
-      orderBy: { _sum: { amount: "desc" } },
+      orderBy: [{ _sum: { amount: "desc" } }, { userId: "asc" }],
       skip: calculateOffset(page, limit),
       take: limit,
     });
@@ -492,7 +448,7 @@ export class LeaderboardService {
       where: whereClause,
       _sum: { bits: true },
       _count: { id: true },
-      orderBy: { _sum: { bits: "desc" } },
+      orderBy: [{ _sum: { bits: "desc" } }, { userId: "asc" }],
       skip: calculateOffset(page, limit),
       take: limit,
     });
@@ -564,7 +520,7 @@ export class LeaderboardService {
       by: ["userId"],
       where: whereClause,
       _count: { id: true },
-      orderBy: { _count: { id: "desc" } },
+      orderBy: [{ _count: { id: "desc" } }, { userId: "asc" }],
       skip: calculateOffset(page, limit),
       take: limit,
     });

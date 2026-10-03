@@ -1,8 +1,10 @@
-import { PaginationQuery, PaginationInfo } from "../types/api.types";
+import { PaginationInfo } from "../types/api.types";
+import { parsePositiveInteger, RequestValidationError } from "./validation";
 
-export const parsePaginationQuery = (query: any): { page: number; limit: number } => {
-  const page = Math.max(1, parseInt(query.page as string) || 1);
-  const limit = Math.min(100, Math.max(1, parseInt(query.limit as string) || 20));
+export const parsePaginationQuery = (query: Record<string, unknown>): { page: number; limit: number } => {
+  const page = parsePositiveInteger(query.page, "Page", 1);
+  const limit = Math.min(100, parsePositiveInteger(query.limit, "Limit", 20));
+  if ((page - 1) * limit > 2147483647) throw new RequestValidationError("Page is outside the supported range");
 
   return { page, limit };
 };

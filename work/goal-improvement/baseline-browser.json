@@ -1,0 +1,29 @@
+{
+  "nextEnabledOnLastPage": true,
+  "previousAfterEmpty": 0,
+  "mobileWidth": {
+    "viewport": 375,
+    "content": 460
+  },
+  "chatRuns": [
+    {
+      "millisecondsToMessages": 1131,
+      "requests": 20,
+      "bytes": 203511,
+      "rendered": 1000
+    },
+    {
+      "millisecondsToMessages": 343,
+      "requests": 20,
+      "bytes": 258931,
+      "rendered": 1000
+    },
+    {
+      "millisecondsToMessages": 351,
+      "requests": 20,
+      "bytes": 184961,
+      "rendered": 1000
+    }
+  ],
+  "errors": []
+}

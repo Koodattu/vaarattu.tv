@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { parsePositiveInteger } from "../utils/validation";
 import { StreamService } from "../services/stream.service";
 import { ApiResponse } from "../types/api.types";
 import { parsePaginationQuery, createPaginationInfo } from "../utils/pagination";
@@ -52,14 +53,7 @@ export class StreamController {
   }
 
   async getStream(req: Request, res: Response<ApiResponse>) {
-    const streamId = parseInt(req.params.id);
-
-    if (isNaN(streamId)) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid stream ID",
-      });
-    }
+    const streamId = parsePositiveInteger(req.params.id, "ID");
 
     const stream = await streamService.getStream(streamId);
 
@@ -77,14 +71,7 @@ export class StreamController {
   }
 
   async getStreamTimeline(req: Request, res: Response<ApiResponse>) {
-    const streamId = parseInt(req.params.id);
-
-    if (isNaN(streamId)) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid stream ID",
-      });
-    }
+    const streamId = parsePositiveInteger(req.params.id, "ID");
 
     const timeline = await streamService.getStreamTimeline(streamId);
 

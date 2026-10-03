@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { StreamListItem } from "@/types/api";
 import { apiClient } from "@/lib/api";
 import { formatDate, formatDuration, formatRelativeTime } from "@/lib/utils";

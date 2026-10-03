@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const { test, after } = require("node:test");
 const prismaModule = require("../src/prismaClient");
 const originalPrisma = prismaModule.default;
-const prisma = { stream: { findMany: async () => [], count: async () => 0 } };
+const prisma = { stream: { findMany: async () => [], count: async () => 0 }, $queryRaw: async () => [] };
 prismaModule.default = prisma;
 after(() => { prismaModule.default = originalPrisma; });
 const { StreamService } = require("../src/services/stream.service");

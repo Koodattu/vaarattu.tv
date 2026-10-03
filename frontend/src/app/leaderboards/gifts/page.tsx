@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { LeaderboardSubscriptionGift, TimeRange } from "@/types/api";
+import { TimeRange } from "@/types/api";
 import { apiClient } from "@/lib/api";
+import { useApiQuery } from "@/hooks/useApiQuery";
+import { Pagination } from "@/components/Pagination";
 
 const TIME_RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
   { value: "all", label: "All Time" },
@@ -30,32 +32,11 @@ function GiftsLeaderboardContent() {
   const initialTimeRange = (searchParams.get("timeRange") as TimeRange) || "all";
 
   const [timeRange, setTimeRange] = useState<TimeRange>(initialTimeRange);
-  const [gifters, setGifters] = useState<LeaderboardSubscriptionGift[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
   const pageSize = 25;
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-
-      const response = await apiClient.getTopGiftedSubs(timeRange, page, pageSize);
-
-      if (response.success && response.data) {
-        setGifters(response.data);
-        setHasMore(response.data.length === pageSize);
-      } else {
-        setError(response.error || "Failed to load leaderboard");
-      }
-
-      setLoading(false);
-    };
-
-    fetchData();
-  }, [timeRange, page]);
+  const { response, loading, retry } = useApiQuery(useCallback((signal: AbortSignal) => apiClient.getTopGiftedSubs(timeRange, page, pageSize, signal), [timeRange, page]));
+  const gifters = response?.data ?? [];
+  const error = response?.error;
 
   const handleTimeRangeChange = (newRange: TimeRange) => {
     setTimeRange(newRange);
@@ -76,12 +57,13 @@ function GiftsLeaderboardContent() {
           <p className="text-gray-400">Viewers who have gifted the most channel subscriptions</p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {TIME_RANGE_OPTIONS.map((option) => (
             <button
               key={option.value}
+              aria-pressed={timeRange === option.value}
               onClick={() => handleTimeRangeChange(option.value)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`min-h-11 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 timeRange === option.value ? "bg-purple-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"
               }`}
             >
@@ -99,9 +81,10 @@ function GiftsLeaderboardContent() {
       )}
 
       {error && (
-        <div className="bg-red-900/30 border border-red-700 rounded-lg p-6 text-center">
+        <div role="alert" className="bg-red-900/30 border border-red-700 rounded-lg p-6 text-center">
           <p className="text-red-400 mb-2">Failed to load leaderboard</p>
-          <p className="text-gray-500 text-sm">{error}</p>
+          <p className="text-gray-300 text-sm">{error}</p>
+          <button type="button" onClick={retry} className="mt-3 min-h-11 rounded-md bg-gray-700 px-4 py-2 text-white hover:bg-gray-600">Try again</button>
         </div>
       )}
 
@@ -121,7 +104,7 @@ function GiftsLeaderboardContent() {
                       <span className="w-12 text-center text-xl font-bold">{getRankBadge(rank)}</span>
                       {gifter.avatar && <Image src={gifter.avatar} alt={gifter.displayName} width={48} height={48} className="rounded-full" />}
                       <div className="flex-1 min-w-0">
-                        <div className="text-white font-medium text-lg">{gifter.displayName}</div>
+                        <Link href={`/profiles/${encodeURIComponent(gifter.login)}`} className="inline-flex min-h-11 items-center text-purple-300 font-medium text-lg hover:underline [overflow-wrap:anywhere]">{gifter.displayName}</Link>
                       </div>
                       <div className="text-right">
                         <div className="text-white font-bold text-xl">{formatNumber(gifter.totalGiftedSubs)}</div>
@@ -134,23 +117,7 @@ function GiftsLeaderboardContent() {
             )}
           </div>
 
-          <div className="flex justify-center gap-4 mt-8">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="px-6 py-2 bg-gray-800 text-gray-300 rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Previous
-            </button>
-            <span className="px-6 py-2 text-gray-400">Page {page}</span>
-            <button
-              onClick={() => setPage((p) => p + 1)}
-              disabled={!hasMore}
-              className="px-6 py-2 bg-gray-800 text-gray-300 rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Next
-            </button>
-          </div>
+          <Pagination page={page} totalPages={response?.pagination?.totalPages ?? page} disabled={loading} onPageChange={setPage} />
         </>
       )}
     </div>

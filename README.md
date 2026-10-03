@@ -136,12 +136,16 @@ Designed to run on a Raspberry Pi 5 — no expensive cloud hosting required. Eve
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20.9+ for Next.js (local verification uses Node.js 24)
 - PostgreSQL
 - Twitch Developer App (Client ID & Secret)
 - OpenAI API key (for AI profiles)
 
 ### Configuration
+
+For local work with synthetic data and no external credentials, use the
+[isolated setup and verification guide](docs/local-testing.md). It covers API,
+database, browser and production-build checks without starting the live collector.
 
 1. Set up environment variables in `backend/.env`:
    - `DATABASE_URL`

@@ -1,0 +1,35 @@
+{
+  "environment": "Chromium, Next development server, Helsinki timezone, 1,000 synthetic messages",
+  "chatRuns": [
+    {
+      "millisecondsToMessages": 323,
+      "requests": 1,
+      "completedResponses": 1,
+      "bytes": 18550,
+      "rendered": 100
+    },
+    {
+      "millisecondsToMessages": 180,
+      "requests": 1,
+      "completedResponses": 1,
+      "bytes": 18550,
+      "rendered": 100
+    },
+    {
+      "millisecondsToMessages": 178,
+      "requests": 1,
+      "completedResponses": 1,
+      "bytes": 18550,
+      "rendered": 100
+    }
+  ],
+  "tablet": {
+    "viewport": 768,
+    "content": 768
+  },
+  "enlargedText": {
+    "viewport": 768,
+    "content": 768
+  },
+  "errors": []
+}

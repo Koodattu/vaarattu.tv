@@ -1,7 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import { ApiResponse } from "../types/api.types";
+import { RequestValidationError } from "../utils/validation";
 
 export const errorHandler = (err: Error, req: Request, res: Response<ApiResponse>, next: NextFunction) => {
+  if (err instanceof RequestValidationError) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
   console.error("API Error:", err);
 
   // Default error response

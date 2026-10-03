@@ -94,11 +94,7 @@ export class UserService {
           },
         },
         where: whereClause,
-        orderBy: {
-          viewerProfile: {
-            totalMessages: "desc",
-          },
-        },
+        orderBy: [{ viewerProfile: { totalMessages: "desc" } }, { id: "asc" }],
         skip: offset,
         take: limit,
       }),
@@ -204,7 +200,7 @@ export class UserService {
       },
     });
 
-    if (!user || !user.viewerProfile) {
+    if (!user) {
       return null;
     }
 
@@ -214,32 +210,32 @@ export class UserService {
       login: user.login,
       displayName: user.displayName,
       avatar: user.avatar,
-      totalMessages: user.viewerProfile.totalMessages,
-      totalWatchTime: user.viewerProfile.totalWatchTime,
-      totalRedemptions: user.viewerProfile.totalRedemptions,
-      totalPointsSpent: user.viewerProfile.totalPointsSpent,
-      averageSessionTime: user.viewerProfile.averageSessionTime,
-      lastSeen: user.viewerProfile.lastSeen,
-      aiSummary: user.viewerProfile.aiSummary,
-      aiSummaryLastUpdate: user.viewerProfile.aiSummaryLastUpdate,
+      totalMessages: user.viewerProfile?.totalMessages ?? 0,
+      totalWatchTime: user.viewerProfile?.totalWatchTime ?? 0,
+      totalRedemptions: user.viewerProfile?.totalRedemptions ?? 0,
+      totalPointsSpent: user.viewerProfile?.totalPointsSpent ?? 0,
+      averageSessionTime: user.viewerProfile?.averageSessionTime ?? 0,
+      lastSeen: user.viewerProfile?.lastSeen ?? null,
+      aiSummary: user.viewerProfile?.aiSummary ?? null,
+      aiSummaryLastUpdate: user.viewerProfile?.aiSummaryLastUpdate ?? null,
       isFollowing: user.twitchProfile?.isFollowing,
       isSubscribed: user.twitchProfile?.isSubscribed,
       isModerator: user.twitchProfile?.isModerator,
       isVip: user.twitchProfile?.isVip,
-      topEmotes: user.viewerProfile.topEmotes.map((te) => ({
+      topEmotes: (user.viewerProfile?.topEmotes ?? []).map((te) => ({
         name: te.emote.name,
         platform: te.emote.platform,
         imageUrl: te.emote.imageUrl,
         usageCount: te.usageCount,
         rank: te.rank,
       })),
-      topGames: user.viewerProfile.topGames.map((tg) => ({
+      topGames: (user.viewerProfile?.topGames ?? []).map((tg) => ({
         name: tg.game.name,
         boxArtUrl: tg.game.boxArtUrl,
         watchTime: tg.watchTime,
         rank: tg.rank,
       })),
-      topRewards: user.viewerProfile.topRewards.map((tr) => ({
+      topRewards: (user.viewerProfile?.topRewards ?? []).map((tr) => ({
         title: tr.reward.title,
         cost: tr.reward.cost,
         imageUrl: tr.reward.imageUrl,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useHostname } from "@/hooks/useHostname";
 
 interface TwitchStreamEmbedProps {
   channel: string;
@@ -11,13 +11,7 @@ interface TwitchStreamEmbedProps {
 }
 
 export function TwitchStreamEmbed({ channel, width = "100%", height = "100%", muted = true, autoplay = true }: TwitchStreamEmbedProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [parentDomain, setParentDomain] = useState<string>("");
-
-  useEffect(() => {
-    // Get the parent domain for Twitch embed
-    setParentDomain(window.location.hostname);
-  }, []);
+  const parentDomain = useHostname();
 
   if (!parentDomain) {
     return (
@@ -30,7 +24,7 @@ export function TwitchStreamEmbed({ channel, width = "100%", height = "100%", mu
   const embedUrl = `https://player.twitch.tv/?channel=${channel}&parent=${parentDomain}&muted=${muted}&autoplay=${autoplay}`;
 
   return (
-    <div ref={containerRef} className="relative" style={{ width, height }}>
+    <div className="relative" style={{ width, height }}>
       <iframe src={embedUrl} width="100%" height="100%" allowFullScreen className="rounded-lg" title={`${channel}'s Twitch Stream`} />
     </div>
   );

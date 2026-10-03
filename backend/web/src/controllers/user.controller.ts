@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { parsePositiveInteger, parseTextQuery } from "../utils/validation";
 import { UserService } from "../services/user.service";
 import { ApiResponse } from "../types/api.types";
 import { parsePaginationQuery, createPaginationInfo } from "../utils/pagination";
@@ -7,7 +8,7 @@ const userService = new UserService();
 
 export class UserController {
   async getRandomUsers(req: Request, res: Response<ApiResponse>) {
-    const limit = Math.min(parseInt(req.query.limit as string) || 18, 50);
+    const limit = Math.min(parsePositiveInteger(req.query.limit, "Limit", 18), 50);
 
     const users = await userService.getRandomUsers(limit);
 
@@ -19,7 +20,7 @@ export class UserController {
 
   async getUsers(req: Request, res: Response<ApiResponse>) {
     const { page, limit } = parsePaginationQuery(req.query);
-    const search = req.query.search as string | undefined;
+    const search = parseTextQuery(req.query.search, "Search");
 
     const { users, total } = await userService.getUsers(page, limit, search);
 
@@ -31,14 +32,7 @@ export class UserController {
   }
 
   async getUserProfile(req: Request, res: Response<ApiResponse>) {
-    const userId = parseInt(req.params.id);
-
-    if (isNaN(userId)) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid user ID",
-      });
-    }
+    const userId = parsePositiveInteger(req.params.id, "ID");
 
     const profile = await userService.getUserProfile(userId);
 
@@ -81,14 +75,7 @@ export class UserController {
   }
 
   async getUserViewSessions(req: Request, res: Response<ApiResponse>) {
-    const userId = parseInt(req.params.id);
-
-    if (isNaN(userId)) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid user ID",
-      });
-    }
+    const userId = parsePositiveInteger(req.params.id, "ID");
 
     const sessions = await userService.getUserViewSessions(userId);
 

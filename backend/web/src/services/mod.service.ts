@@ -1,4 +1,5 @@
 import prisma from "../prismaClient";
+import { Prisma } from "@vaarattu/shared";
 import { UserMessage } from "../types/api.types";
 import { calculateOffset } from "../utils/pagination";
 
@@ -6,7 +7,7 @@ export class ModService {
   async getUserMessages(userId: number, page: number, limit: number, search?: string, streamId?: number): Promise<{ messages: UserMessage[]; total: number }> {
     const offset = calculateOffset(page, limit);
 
-    const whereClause: any = { userId };
+    const whereClause: Prisma.MessageWhereInput = { userId };
 
     if (search) {
       whereClause.content = {
@@ -34,7 +35,7 @@ export class ModService {
           },
         },
         where: whereClause,
-        orderBy: { timestamp: "desc" },
+        orderBy: [{ timestamp: "desc" }, { id: "desc" }],
         skip: offset,
         take: limit,
       }),
@@ -56,7 +57,7 @@ export class ModService {
   async searchMessages(search: string, page: number, limit: number, streamId?: number, userId?: number): Promise<{ messages: UserMessage[]; total: number }> {
     const offset = calculateOffset(page, limit);
 
-    const whereClause: any = {
+    const whereClause: Prisma.MessageWhereInput = {
       content: {
         contains: search,
         mode: "insensitive" as const,
@@ -93,7 +94,7 @@ export class ModService {
           },
         },
         where: whereClause,
-        orderBy: { timestamp: "desc" },
+        orderBy: [{ timestamp: "desc" }, { id: "desc" }],
         skip: offset,
         take: limit,
       }),

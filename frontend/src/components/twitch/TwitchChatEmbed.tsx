@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useHostname } from "@/hooks/useHostname";
 
 interface TwitchChatEmbedProps {
   channel: string;
@@ -10,12 +10,7 @@ interface TwitchChatEmbedProps {
 }
 
 export function TwitchChatEmbed({ channel, width = "100%", height = "100%", darkMode = true }: TwitchChatEmbedProps) {
-  const [parentDomain, setParentDomain] = useState<string>("");
-
-  useEffect(() => {
-    // Get the parent domain for Twitch embed
-    setParentDomain(window.location.hostname);
-  }, []);
+  const parentDomain = useHostname();
 
   if (!parentDomain) {
     return (
