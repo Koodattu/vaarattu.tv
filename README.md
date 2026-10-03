@@ -24,7 +24,8 @@ Track everything that happens on stream — from chat messages and watchtime to 
 
 - **Personal Profiles**: View your stats, watchtime, favorite emotes, top redeemed rewards, and get your own AI-generated bio
 - **Leaderboards**: Compete across multiple categories and see where you rank
-- **Stream History**: Browse past streams and VODs
+- **Stream History**: Search stream titles and games, filter by date or recording availability, and keep your place when returning
+- **Replay Moments**: Open chapters and activity peaks with synchronized chat, switch between recordings, and share timestamped links
 - **Clips Showcase**: Highlight the best moments (planned)
 
 ### For Streamers
@@ -98,12 +99,12 @@ vaarattu.tv/
 - Emote tracking (Twitch, BTTV, FFZ, 7TV)
 - Watchtime and session tracking
 - Stream timelines showing viewer presence
+- Searchable VOD archive, linked chapters and accessible activity charts ([usage and API](docs/stream-browsing.md))
 - Moderator message search tools
 
 ### 🚧 In Progress
 
 - Clips system
-- Enhanced VOD features
 - Game/category tracking polish
 
 ### 📋 Planned

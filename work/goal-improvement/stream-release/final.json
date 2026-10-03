@@ -1,0 +1,59 @@
+{
+  "phase": "final",
+  "environment": "Chromium; Next production standalone; PostgreSQL17, 1CPU/384MiB; 27 synthetic streams, 1500 messages",
+  "errors": [],
+  "archiveRequests": [
+    {
+      "milliseconds": 11.5702,
+      "bytes": 8970,
+      "rows": 12
+    },
+    {
+      "milliseconds": 12.662799999999947,
+      "bytes": 8970,
+      "rows": 12
+    },
+    {
+      "milliseconds": 14.909999999999968,
+      "bytes": 8970,
+      "rows": 12
+    },
+    {
+      "milliseconds": 11.12869999999998,
+      "bytes": 8970,
+      "rows": 12
+    },
+    {
+      "milliseconds": 12.62869999999998,
+      "bytes": 8970,
+      "rows": 12
+    },
+    {
+      "milliseconds": 10.552400000000034,
+      "bytes": 8970,
+      "rows": 12
+    },
+    {
+      "milliseconds": 9.893800000000056,
+      "bytes": 8970,
+      "rows": 12
+    }
+  ],
+  "archiveSearchControls": 1,
+  "chapterLinks": 1,
+  "chartWidth": 309,
+  "pageWidth": 375,
+  "responsive": [
+    {
+      "width": 320,
+      "pageWidth": 320,
+      "selected": "72 people at 40:00"
+    },
+    {
+      "width": 768,
+      "pageWidth": 768,
+      "selected": "72 people at 40:00"
+    }
+  ],
+  "textScale200": 375
+}

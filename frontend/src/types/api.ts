@@ -15,6 +15,7 @@ export interface PaginationInfo {
 
 // Stream types
 export interface StreamListItem {
+  recordingSources: Array<"twitch" | "youtube">;
   id: number;
   twitchId: string;
   startTime: string; // ISO date string

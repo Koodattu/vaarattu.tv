@@ -1,5 +1,13 @@
 # Improvement goal
 
+## Active program — stream discovery and replay, 2026-10-03
+
+The prior local-improvement goal below was subsequently committed and deployed as
+`56eafdb009138748912dbbd6576ad778f18da839`. The newly authorized product-development
+and release goal starts from that clean `main` revision. Its current working record
+is [stream-release/STATE.md](stream-release/STATE.md). Resume there; the sections
+below remain historical evidence for the earlier goal.
+
 ## Starting state — 2026-10-03
 - Revision `0956360fd4c59de5941d328b38fdfdbdee700bc0`, branch `main`.
 - Clean staged/unstaged/untracked tree. No applicable on-disk AGENTS.md found; supplied global instructions apply. Read repository README and `.github/instructions`.

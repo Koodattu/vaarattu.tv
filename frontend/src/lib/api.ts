@@ -47,24 +47,26 @@ class ApiClient {
   }
 
   // Stream endpoints
-  async getStreams(page: number = 1, limit: number = 20): Promise<ApiResponse<StreamListItem[]>> {
-    return this.fetchApi<StreamListItem[]>(`/api/streams?page=${page}&limit=${limit}`);
+  async getStreams(page: number = 1, limit: number = 20, filters: { q?: string; from?: string; to?: string; recording?: "all" | "available" } = {}, signal?: AbortSignal): Promise<ApiResponse<StreamListItem[]>> {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    for (const [key, value] of Object.entries(filters)) if (value) params.set(key, value);
+    return this.fetchApi<StreamListItem[]>(`/api/streams?${params}`, signal);
   }
 
-  async getStream(streamId: number): Promise<ApiResponse<StreamDetail>> {
-    return this.fetchApi<StreamDetail>(`/api/streams/${streamId}`);
+  async getStream(streamId: number, signal?: AbortSignal): Promise<ApiResponse<StreamDetail>> {
+    return this.fetchApi<StreamDetail>(`/api/streams/${streamId}`, signal);
   }
 
-  async getStreamActivity(streamId: number): Promise<ApiResponse<StreamActivity>> {
-    return this.fetchApi<StreamActivity>(`/api/streams/${streamId}/activity`);
+  async getStreamActivity(streamId: number, signal?: AbortSignal): Promise<ApiResponse<StreamActivity>> {
+    return this.fetchApi<StreamActivity>(`/api/streams/${streamId}/activity`, signal);
   }
 
   async getChatReplay(streamId: number, start: number, after?: string): Promise<ApiResponse<ChatReplayPage>> {
     return this.fetchApi<ChatReplayPage>(`/api/streams/${streamId}/chat?start=${start}${after ? `&after=${encodeURIComponent(after)}` : ""}`);
   }
 
-  async getStreamTimeline(streamId: number): Promise<ApiResponse<StreamTimeline>> {
-    return this.fetchApi<StreamTimeline>(`/api/streams/${streamId}/timeline`);
+  async getStreamTimeline(streamId: number, signal?: AbortSignal): Promise<ApiResponse<StreamTimeline>> {
+    return this.fetchApi<StreamTimeline>(`/api/streams/${streamId}/timeline`, signal);
   }
 
   // Leaderboard endpoints

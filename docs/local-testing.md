@@ -63,6 +63,11 @@ Run the web suite on a fresh database **before** browser fixtures. To repeat it
 after browser testing, stop the test servers and recreate only your disposable
 container, then apply the migrations again.
 
+The existing recording integration suite leaves some synthetic records behind.
+After the web suite, also recreate this disposable container and reapply the
+migrations before seeding browser fixtures. Browser scenarios expect their own
+27-stream dataset; do not mix the two suites' records or relax count assertions.
+
 ## Browser journeys
 
 With the database ready, leave ports 33101 and 33102 free, then run:
@@ -73,15 +78,21 @@ npm.cmd run test:e2e --prefix frontend
 
 Playwright starts and stops the real API routes with synthetic fixtures and the
 Next development server. Tests check the API fixture identity and block browser
-requests outside these two local origins. Fixtures include 26 viewers, 1,000
-messages spanning Helsinki midnight, a stream, rewards, emotes, gifts and cheers.
+requests outside these two local origins. Fixtures include 26 viewers, 27 streams,
+1,500 messages spanning Helsinki midnight, rewards, emotes, gifts and cheers.
+The archive has three games, long chapter titles, unavailable recordings, split
+YouTube parts, Twitch alternatives and gaps in recording/audience coverage.
 The fixture API never loads `.env` files or starts the live collector.
 
 Coverage includes discovery → profile → histories, leaderboard pagination and
 filters, retries and partial failures, stale requests, local calendar dates,
-VOD detail/timeline/unavailable playback, mobile layout and keyboard navigation.
+VOD detail/timeline/unavailable playback, archive filters and pagination, linked
+chapters, split-recording offsets, synchronized chat, source switches, shared
+moments, activity peaks/gaps, refresh recovery, mobile and keyboard navigation.
+Player SDKs are doubled at the external boundary; this verifies our playback
+mapping and recovery, not the availability of real Twitch or YouTube recordings.
 Failed runs save traces in `frontend/test-results`; screenshots are written to
-`work/goal-improvement`. These are synthetic records only.
+`work/goal-improvement/stream-release`. These are synthetic records only.
 
 For manual review, start these commands in separate terminals:
 
@@ -117,6 +128,14 @@ deployment build. Keep the synthetic API running; `PLAYWRIGHT_REUSE_SERVER=1`
 also supports verifying this production server. The asset copies follow the
 existing Dockerfile's standalone layout. `npm start` can serve the build locally
 but Next emits a warning because the project uses `output: "standalone"`.
+
+With these servers running, capture the bounded stream workload and responsive
+screenshots with:
+
+```powershell
+$env:EVIDENCE_PHASE = 'final'
+node work/goal-improvement/stream-release/inspect-streams.cjs
+```
 
 ## Cleanup
 

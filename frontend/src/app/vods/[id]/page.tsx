@@ -1,182 +1,54 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { Suspense, use, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { StreamDetail } from "@/types/api";
+import { useSearchParams } from "next/navigation";
 import { apiClient } from "@/lib/api";
-import { formatDate, formatDuration, formatRelativeTime } from "@/lib/utils";
+import { useApiQuery } from "@/hooks/useApiQuery";
+import { formatDuration } from "@/lib/utils";
+import { archiveReturnTo, firstRecordingTime, formatStreamDate, streamContext, watchHref } from "@/lib/vods";
+import { StreamChapters } from "@/components/vods/StreamChapters";
 import { StreamActivityChart } from "./activity-chart";
 
-interface VodDetailPageProps {
-  params: Promise<{ id: string }>;
+type Props = { params: Promise<{ id: string }> };
+
+export default function VodDetailPage({ params }: Props) {
+  return <Suspense fallback={<p role="status" className="p-8 text-gray-300">Loading stream…</p>}><VodDetail params={params} /></Suspense>;
 }
 
-export default function VodDetailPage({ params }: VodDetailPageProps) {
+function VodDetail({ params }: Props) {
   const { id } = use(params);
-  const [vod, setVod] = useState<StreamDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchVod = async () => {
-      const streamId = parseInt(id);
-      if (isNaN(streamId)) {
-        setError("Invalid VOD ID");
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      const response = await apiClient.getStream(streamId);
-
-      if (response.success && response.data) {
-        setVod(response.data);
-        setError(null);
-      } else {
-        setError(response.error || "Failed to load VOD");
-      }
-      setLoading(false);
-    };
-
-    fetchVod();
-  }, [id]);
-
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
-          <span className="ml-3 text-gray-400">Loading VOD...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !vod) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <Link href="/vods" className="text-purple-400 hover:text-purple-300 transition-colors text-sm mb-4 inline-block">
-          ← Back to VODs
-        </Link>
-        <div className="bg-red-900/30 border border-red-700 rounded-lg p-6 text-center">
-          <p className="text-red-400 mb-2">Failed to load VOD</p>
-          <p className="text-gray-500 text-sm">{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  const firstSegment = vod.segments[0];
-  const uniqueGames = [...new Set(vod.segments.map((s) => s.gameName))];
-
-  return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-6">
-        <Link href="/vods" className="text-purple-400 hover:text-purple-300 transition-colors text-sm mb-4 inline-block">
-          ← Back to VODs
-        </Link>
-
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">{firstSegment?.title || "Stream"}</h1>
-            <div className="flex flex-wrap items-center gap-4 text-gray-400">
-              <span>{formatDate(vod.startTime)}</span>
-              <span>{formatRelativeTime(vod.startTime)}</span>
-              {vod.duration && <span className="text-purple-400">{formatDuration(vod.duration)}</span>}
-            </div>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <Link
-                href={`/vods/${vod.id}/watch`}
-                className="inline-block px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-sm font-medium transition-colors"
-              >
-                Watch VOD
-              </Link>
-              <Link
-                href={`/vods/${vod.id}/timeline`}
-                className="inline-block px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white rounded-md text-sm font-medium transition-colors"
-              >
-                View Timeline
-              </Link>
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="flex gap-6 text-sm">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-white">{vod.totalMessages.toLocaleString()}</div>
-              <div className="text-gray-400">Messages</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-white">{vod.uniqueViewers}</div>
-              <div className="text-gray-400">Unique viewers</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-white">{vod.totalRedemptions}</div>
-              <div className="text-gray-400">Redemptions</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <StreamActivityChart key={vod.id} streamId={vod.id} />
-
-      {/* Games played */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold text-white mb-4">Games Played</h2>
-        <div className="flex flex-wrap gap-2">
-          {uniqueGames.map((game, index) => (
-            <span key={index} className="px-3 py-1.5 bg-gray-800 text-gray-300 rounded-md border border-gray-700">
-              {game}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Stream Segments */}
-      <div>
-        <h2 className="text-xl font-semibold text-white mb-4">Stream Segments ({vod.segments.length})</h2>
-        <div className="space-y-3">
-          {vod.segments.map((segment, index) => (
-            <div key={segment.id} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-              <div className="flex items-start gap-4">
-                {/* Segment number */}
-                <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white font-medium flex-shrink-0">{index + 1}</div>
-
-                {/* Game box art */}
-                {segment.gameBoxArtUrl && (
-                  <div className="flex-shrink-0">
-                    <Image src={segment.gameBoxArtUrl.replace("{width}", "52").replace("{height}", "72")} alt={segment.gameName} width={52} height={72} className="rounded" />
-                  </div>
-                )}
-
-                {/* Segment info */}
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-white mb-1">{segment.title}</div>
-                  <div className="text-sm text-purple-400 mb-1">{segment.gameName}</div>
-                  <div className="text-xs text-gray-500">
-                    {new Date(segment.startTime).toLocaleTimeString("en-US", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                    {segment.endTime && (
-                      <>
-                        {" → "}
-                        {new Date(segment.endTime).toLocaleTimeString("en-US", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </>
-                    )}
-                    {segment.duration && <span className="ml-2 text-gray-400">({formatDuration(segment.duration)})</span>}
-                  </div>
-                </div>
+  const searchParams = useSearchParams();
+  const returnTo = archiveReturnTo(searchParams.get("returnTo"));
+  const valid = /^\d+$/.test(id) && Number(id) > 0 && Number(id) <= 2147483647;
+  const load = useCallback((signal: AbortSignal) => apiClient.getStream(Number(id), signal), [id]);
+  const { response, loading, retry } = useApiQuery(valid ? load : null);
+  const vod = response?.data;
+  const hasRecording = vod && (vod.twitchVideoAvailable || vod.youtubeVideos.length > 0);
+  return <div className="container mx-auto px-4 py-8">
+    <Link href={returnTo} className="mb-4 inline-block py-2 text-sm text-purple-300 hover:text-purple-200">← Back to VODs</Link>
+    {loading ? <p role="status" className="py-12 text-gray-300">Loading stream…</p>
+      : !vod ? <div role="alert" className="rounded-lg border border-red-700 bg-red-950/40 p-5"><h1 className="text-xl font-semibold text-white">Stream unavailable</h1><p className="mt-2 text-gray-300">{valid ? response?.error : "Invalid stream ID."}</p>{valid && <button type="button" onClick={retry} className="mt-3 min-h-11 rounded bg-gray-800 px-4 py-2 text-white hover:bg-gray-700">Try again</button>}</div>
+        : <>
+          <header className="mb-8 border-b border-gray-700 pb-6">
+            <h1 className="max-w-4xl text-2xl font-bold break-words text-white md:text-3xl">{vod.segments[0]?.title || "Untitled stream"}</h1>
+            <p className="mt-2 text-sm text-gray-300"><time dateTime={vod.startTime}>{formatStreamDate(vod.startTime)}</time> Helsinki · {vod.endTime ? formatDuration(vod.duration) : "Ongoing stream"}</p>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex flex-wrap gap-3">
+                <Link href={watchHref(vod.id, firstRecordingTime(vod), returnTo)} className="inline-flex min-h-11 items-center rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700">{hasRecording ? "Watch VOD" : "Recording details"}</Link>
+                <Link href={`/vods/${vod.id}/timeline${streamContext(returnTo)}`} className="inline-flex min-h-11 items-center rounded-md border border-gray-700 bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">View Timeline</Link>
               </div>
+              <dl className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-gray-300">
+                <div><dt className="inline">Messages </dt><dd className="inline font-semibold tabular-nums text-white">{vod.totalMessages.toLocaleString()}</dd></div>
+                <div><dt className="inline">Tracked in chat </dt><dd className="inline font-semibold tabular-nums text-white">{vod.uniqueViewers.toLocaleString()}</dd></div>
+                <div><dt className="inline">Redemptions </dt><dd className="inline font-semibold tabular-nums text-white">{vod.totalRedemptions.toLocaleString()}</dd></div>
+              </dl>
             </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+          </header>
+          <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
+            <div className="min-w-0"><StreamActivityChart key={vod.id} vod={vod} returnTo={returnTo} /></div>
+            <StreamChapters vod={vod} returnTo={returnTo} />
+          </div>
+        </>}
+  </div>;
 }

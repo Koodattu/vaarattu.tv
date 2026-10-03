@@ -39,13 +39,13 @@ test("VOD browsing exposes activity, viewer filtering and an honest unavailable 
   await page.goto("/vods");
   await page.getByRole("link", { name: /Community night — a synthetic local recording/ }).click();
   await expect(page.getByRole("heading", { name: "Community night — a synthetic local recording", exact: true })).toBeVisible();
-  await expect(page.getByText("Unique viewers", { exact: true })).toBeVisible();
+  await expect(page.getByText("Tracked in chat", { exact: true })).toBeVisible();
   const detailURL = page.url();
   await page.getByRole("link", { name: "View Timeline", exact: true }).click();
   await page.getByPlaceholder("Search viewers...").fill("absent-viewer");
   await expect(page.getByText(/No viewers matching/)).toBeVisible();
   await page.goto(detailURL);
-  await page.getByRole("link", { name: "Watch VOD", exact: true }).click();
+  await page.getByRole("link", { name: "Recording details", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Recording unavailable", exact: true })).toBeVisible();
   await page.setViewportSize({ width: 375, height: 812 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375);
@@ -64,7 +64,7 @@ test("profile search stops at the last page and survives a profile round trip", 
   await expect(page.getByRole("searchbox", { name: "Search viewers" })).toHaveValue("Community");
   await expect(page.getByRole("link", { name: /Community Viewer/ })).toHaveCount(25);
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.screenshot({ path: "../work/goal-improvement/profiles-mobile.png", fullPage: false });
+  await page.screenshot({ path: "../work/goal-improvement/stream-release/profiles-mobile.png", fullPage: false });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375);
 });
 
@@ -80,7 +80,7 @@ test("leaderboards stop at the server's last page and emote filtering shows all 
   await expect(page.getByRole("button", { name: "Next", exact: true })).toBeDisabled();
   await expect(page.getByRole("button", { name: "BetterTTV", exact: true })).toHaveAttribute("aria-pressed", "true");
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.screenshot({ path: "../work/goal-improvement/emotes-mobile.png", fullPage: false });
+  await page.screenshot({ path: "../work/goal-improvement/stream-release/emotes-mobile.png", fullPage: false });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375);
 });
 
@@ -137,7 +137,7 @@ test("chat history loads one page, searches and recovers without losing input", 
   await page.getByRole("button", { name: "Clear", exact: true }).click();
   await expect(page.locator("main li")).toHaveCount(100);
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.screenshot({ path: "../work/goal-improvement/chat-mobile.png", fullPage: false });
+  await page.screenshot({ path: "../work/goal-improvement/stream-release/chat-mobile.png", fullPage: false });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375);
 });
 
@@ -193,5 +193,5 @@ test("dark shell remains readable in light mode and navigation fits a narrow scr
   await expect(page.getByRole("link", { name: "Skip to content" })).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.locator("main")).toBeFocused();
-  await page.screenshot({ path: "../work/goal-improvement/shell-mobile.png", fullPage: true });
+  await page.screenshot({ path: "../work/goal-improvement/stream-release/shell-mobile.png", fullPage: true });
 });

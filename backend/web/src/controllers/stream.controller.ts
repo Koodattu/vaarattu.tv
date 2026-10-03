@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { parsePositiveInteger } from "../utils/validation";
+import { parseStreamFilters } from "../utils/streamFilters";
 import { StreamService } from "../services/stream.service";
 import { ApiResponse } from "../types/api.types";
 import { parsePaginationQuery, createPaginationInfo } from "../utils/pagination";
@@ -43,7 +44,7 @@ export class StreamController {
   async getStreams(req: Request, res: Response<ApiResponse>) {
     const { page, limit } = parsePaginationQuery(req.query);
 
-    const { streams, total } = await streamService.getStreams(page, limit);
+    const { streams, total } = await streamService.getStreams(page, limit, parseStreamFilters(req.query));
 
     res.json({
       success: true,

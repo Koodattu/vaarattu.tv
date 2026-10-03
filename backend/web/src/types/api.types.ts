@@ -173,6 +173,7 @@ export interface UserProfile extends UserListItem {
 
 // Stream types
 export interface StreamListItem {
+  recordingSources: Array<"twitch" | "youtube">;
   id: number;
   twitchId: string;
   startTime: Date;

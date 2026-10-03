@@ -1,99 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback } from "react";
 import Link from "next/link";
-import { StreamListItem } from "@/types/api";
 import { apiClient } from "@/lib/api";
-import { formatDate, formatDuration, formatRelativeTime } from "@/lib/utils";
+import { useApiQuery } from "@/hooks/useApiQuery";
+import { StreamCard } from "@/components/vods/StreamCard";
 
 export function RecentVods() {
-  const [vods, setVods] = useState<StreamListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchVods = async () => {
-      setLoading(true);
-      const response = await apiClient.getStreams(1, 3);
-
-      if (response.success && response.data) {
-        setVods(response.data);
-        setError(null);
-      } else {
-        setError(response.error || "Failed to load VODs");
-      }
-      setLoading(false);
-    };
-
-    fetchVods();
-  }, []);
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-white">Recent VODs</h2>
-        <Link href="/vods" className="text-purple-400 hover:text-purple-300 transition-colors text-sm font-medium">
-          View all →
-        </Link>
-      </div>
-
-      {loading && (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
-          <span className="ml-3 text-gray-400">Loading VODs...</span>
-        </div>
-      )}
-
-      {error && (
-        <div className="text-center py-8">
-          <p className="text-red-400 mb-2">Failed to load VODs</p>
-          <p className="text-gray-500 text-sm">{error}</p>
-        </div>
-      )}
-
-      {!loading && !error && vods.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-400">No VODs available yet</p>
-        </div>
-      )}
-
-      {!loading && !error && vods.length > 0 && (
-        <div className="grid md:grid-cols-3 gap-4">
-          {vods.map((vod) => (
-            <Link key={vod.id} href={`/vods/${vod.id}`} className="bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors group">
-              {/* Thumbnail placeholder */}
-              <div className="aspect-video bg-gray-700 relative">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-4xl">🎮</span>
-                </div>
-                {/* Duration badge */}
-                <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">{formatDuration(vod.duration)}</div>
-              </div>
-
-              <div className="p-4">
-                <div className="text-white font-medium mb-1 group-hover:text-purple-400 transition-colors">{formatDate(vod.startTime)}</div>
-                <div className="text-gray-400 text-sm mb-2">{formatRelativeTime(vod.startTime)}</div>
-
-                {/* Games played */}
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {vod.segments.slice(0, 2).map((segment, index) => (
-                    <span key={index} className="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded">
-                      {segment.gameName}
-                    </span>
-                  ))}
-                  {vod.segments.length > 2 && <span className="text-xs bg-gray-700 text-gray-400 px-2 py-1 rounded">+{vod.segments.length - 2} more</span>}
-                </div>
-
-                {/* Stats */}
-                <div className="flex gap-4 text-xs text-gray-500">
-                  <span>💬 {vod.totalMessages.toLocaleString()}</span>
-                  <span>👥 {vod.uniqueViewers}</span>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
+  const { response, loading, retry } = useApiQuery(useCallback((signal: AbortSignal) => apiClient.getStreams(1, 3, {}, signal), []));
+  return <div>
+    <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+      <h2 className="text-2xl font-bold text-white">Recent VODs</h2>
+      <Link href="/vods" className="py-2 text-sm font-medium text-purple-300 hover:text-purple-200">Browse all streams →</Link>
     </div>
-  );
+    {loading ? <p role="status" className="py-8 text-gray-300">Loading streams…</p>
+      : response?.error ? <div role="alert" className="py-6 text-gray-300"><p>{response.error}</p><button type="button" onClick={retry} className="mt-2 min-h-11 text-purple-300 hover:text-purple-200">Try again</button></div>
+        : !response?.data?.length ? <p className="py-8 text-gray-300">Streams will appear here as they are recorded.</p>
+          : <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{response.data.map(vod => <StreamCard key={vod.id} vod={vod} />)}</div>}
+  </div>;
 }

@@ -1,6 +1,9 @@
 "use client";
 
-import { use, useEffect, useMemo, useState } from "react";
+import { Suspense, use, useCallback, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useApiQuery } from "@/hooks/useApiQuery";
+import { archiveReturnTo, streamContext } from "@/lib/vods";
 import Link from "next/link";
 import Image from "next/image";
 import { apiClient } from "@/lib/api";
@@ -20,35 +23,19 @@ interface GroupedViewerSessions {
 }
 
 export default function VodTimelinePage({ params }: VodTimelinePageProps) {
+  return <Suspense fallback={<p role="status" className="p-8 text-gray-300">Loading timeline…</p>}><VodTimeline params={params} /></Suspense>;
+}
+
+function VodTimeline({ params }: VodTimelinePageProps) {
   const { id } = use(params);
-  const [timeline, setTimeline] = useState<StreamTimeline | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const query = useSearchParams();
+  const returnTo = archiveReturnTo(query.get("returnTo"));
+  const valid = /^\d+$/.test(id) && Number(id) > 0 && Number(id) <= 2147483647;
+  const load = useCallback((signal: AbortSignal) => apiClient.getStreamTimeline(Number(id), signal), [id]);
+  const { response, loading, retry } = useApiQuery(valid ? load : null);
+  const timeline = response?.data;
+  const error = valid ? response?.error : "Invalid stream ID.";
   const [usernameFilter, setUsernameFilter] = useState("");
-
-  useEffect(() => {
-    const fetchTimeline = async () => {
-      const streamId = parseInt(id, 10);
-      if (Number.isNaN(streamId)) {
-        setError("Invalid VOD ID");
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      const response = await apiClient.getStreamTimeline(streamId);
-
-      if (response.success && response.data) {
-        setTimeline(response.data);
-        setError(null);
-      } else {
-        setError(response.error || "Failed to load stream timeline");
-      }
-      setLoading(false);
-    };
-
-    fetchTimeline();
-  }, [id]);
 
   // Group sessions by user
   const groupedViewers = useMemo<GroupedViewerSessions[]>(() => {
@@ -105,12 +92,13 @@ export default function VodTimelinePage({ params }: VodTimelinePageProps) {
   if (error || !timeline) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <Link href={`/vods/${id}`} className="text-purple-400 hover:text-purple-300 transition-colors text-sm mb-4 inline-block">
+        <Link href={`/vods/${id}${streamContext(returnTo)}`} className="text-purple-400 hover:text-purple-300 transition-colors text-sm mb-4 inline-block">
           ← Back to VOD
         </Link>
-        <div className="bg-red-900/30 border border-red-700 rounded-lg p-6 text-center">
+        <div role="alert" className="bg-red-900/30 border border-red-700 rounded-lg p-6 text-center">
           <p className="text-red-400 mb-2">Failed to load timeline</p>
           <p className="text-gray-500 text-sm">{error}</p>
+          {valid && <button type="button" className="mt-3 min-h-11 rounded bg-gray-800 px-4 py-2 text-white hover:bg-gray-700" onClick={retry}>Try again</button>}
         </div>
       </div>
     );
@@ -120,7 +108,7 @@ export default function VodTimelinePage({ params }: VodTimelinePageProps) {
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-6">
-        <Link href={`/vods/${id}`} className="text-purple-400 hover:text-purple-300 transition-colors text-sm mb-4 inline-block">
+        <Link href={`/vods/${id}${streamContext(returnTo)}`} className="text-purple-400 hover:text-purple-300 transition-colors text-sm mb-4 inline-block">
           ← Back to VOD
         </Link>
 
@@ -139,11 +127,11 @@ export default function VodTimelinePage({ params }: VodTimelinePageProps) {
         </div>
         <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
           <div className="text-xl font-bold text-white">{timeline.stats.uniqueViewers}</div>
-          <div className="text-xs text-gray-400">Unique viewers</div>
+          <div className="text-xs text-gray-400">Tracked in chat</div>
         </div>
         <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
           <div className="text-xl font-bold text-white">{timeline.stats.peakViewers}</div>
-          <div className="text-xs text-gray-400">Peak viewers</div>
+          <div className="text-xs text-gray-400">Peak chat presence</div>
         </div>
         <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
           <div className="text-xl font-bold text-white">{timeline.stats.totalRedemptions}</div>

@@ -4,6 +4,7 @@ import { StreamListItem, StreamDetail, StreamTimeline } from "../types/api.types
 import { calculateOffset } from "../utils/pagination";
 import { ActivityMinute, buildStreamActivity } from "../utils/streamActivity";
 import { twitchRecordingAvailable } from "../utils/recordingPlayback";
+import { StreamFilters } from "../utils/streamFilters";
 
 export class StreamService {
   private async getUniqueViewerCounts(streamIds: number[]): Promise<Map<number, number>> {
@@ -49,14 +50,37 @@ export class StreamService {
     return buildStreamActivity(stream.startTime, endTime, sessions, minutes, stream.viewerSamples);
   }
 
-  async getStreams(page: number, limit: number): Promise<{ streams: StreamListItem[]; total: number }> {
+  async getStreams(page: number, limit: number, filters: StreamFilters = {}): Promise<{ streams: StreamListItem[]; total: number }> {
     const offset = calculateOffset(page, limit);
+    const now = new Date();
+    const contains = filters.q?.replace(/[\\%_]/g, "\\$&");
+    const where: Prisma.StreamWhereInput = contains ? {
+      segments: { some: { OR: [
+        { title: { contains, mode: "insensitive" } },
+        { game: { name: { contains, mode: "insensitive" } } },
+      ] } },
+    } : {};
+    if (filters.from || filters.until) where.startTime = { gte: filters.from, lt: filters.until };
+    if (filters.recording === "available") where.OR = [
+      { youtubeVideos: { some: { available: true } } },
+      { twitchVideoId: { not: null }, AND: [
+        { OR: [{ twitchVideoAvailable: true }, { twitchVideoAvailable: null }] },
+        { OR: [
+          { twitchVideoAvailable: true, twitchVideoCheckedAt: { gt: new Date(now.getTime() - 86400000) } },
+          { startTime: { gt: new Date(now.getTime() - 60 * 86400000) } },
+        ] },
+      ] },
+    ];
 
     const [streams, total] = await Promise.all([
       prisma.stream.findMany({
+        where,
         select: {
           id: true,
           twitchId: true,
+          twitchVideoId: true,
+          twitchVideoAvailable: true,
+          twitchVideoCheckedAt: true,
           startTime: true,
           endTime: true,
           thumbnailUrl: true,
@@ -70,6 +94,7 @@ export class StreamService {
             select: {
               messages: true,
               redemptions: true,
+              youtubeVideos: { where: { available: true } },
             },
           },
           segments: {
@@ -86,11 +111,11 @@ export class StreamService {
             orderBy: { startTime: "asc" },
           },
         },
-        orderBy: { startTime: "desc" },
+        orderBy: [{ startTime: "desc" }, { id: "desc" }],
         skip: offset,
         take: limit,
       }),
-      prisma.stream.count(),
+      prisma.stream.count({ where }),
     ]);
 
     const viewerCounts = await this.getUniqueViewerCounts(streams.map(stream => stream.id));
@@ -104,6 +129,10 @@ export class StreamService {
         endTime: stream.endTime,
         duration,
         thumbnailUrl: stream.youtubeVideos[0]?.thumbnailUrl || stream.thumbnailUrl,
+        recordingSources: [
+          ...(twitchRecordingAvailable(stream, now) ? ["twitch" as const] : []),
+          ...(stream._count.youtubeVideos > 0 ? ["youtube" as const] : []),
+        ],
         totalMessages: stream._count.messages,
         totalRedemptions: stream._count.redemptions,
         uniqueViewers: viewerCounts.get(stream.id) ?? 0,
