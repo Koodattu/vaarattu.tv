@@ -60,13 +60,14 @@ async function start() {
   app.use(cors());
   const archiveViewer = await prisma.user.findUniqueOrThrow({ where: { login: "viewer02" } });
   await require("./stream-fixtures.cjs")(prisma, fixtureDay, archiveViewer.id);
+  await require("./clip-fixtures.cjs")(prisma);
   app.get("/fixture-thumbnail/:id.svg", (req, res) => {
     const colors = ["#312e81", "#134e4a", "#44403c"];
     const color = colors[Number(req.params.id)] || colors[0];
     res.type("svg").send(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360"><rect width="640" height="360" fill="${color}"/><path d="M0 300 120 100 240 240 370 80 640 300V360H0Z" fill="#111827"/><text x="32" y="52" fill="#fff" font-family="sans-serif" font-size="24">Synthetic community recording</text></svg>`);
   });
-  for (const route of ["leaderboard", "user", "stream", "mod"]) {
-    const prefix = { leaderboard: "leaderboards", user: "users", stream: "streams", mod: "mod" }[route];
+  for (const route of ["leaderboard", "user", "stream", "mod", "clip"]) {
+    const prefix = { leaderboard: "leaderboards", user: "users", stream: "streams", mod: "mod", clip: "clips" }[route];
     app.use(`/api/${prefix}`, require(`../src/routes/${route}.routes`).default);
   }
   app.get("/health", (_req, res) => res.json({ success: true, fixture: "vaarattu-browser" }));

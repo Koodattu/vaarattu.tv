@@ -33,6 +33,34 @@ test("home embeds hydrate with the local hostname and community journeys remain 
   expect(errors).toEqual([]);
 });
 
+test("home discovery stays inside a narrow viewport with populated rankings", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 720 });
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: /Community Viewer 01/ }).first()).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
+  await page.screenshot({ path: "../work/goal-improvement/clips/home-mobile.png", fullPage: true });
+});
+
+test("home rankings and community previews distinguish failures from empty data and retry separately", async ({ page }) => {
+  await page.route("**/api/leaderboards/summary?*", route => route.fulfill({ status: 503, json: { success: false } }));
+  await page.route("**/api/users/random?*", route => route.fulfill({ status: 503, json: { success: false } }));
+  await page.goto("/");
+  await expect(page.getByRole("main").getByRole("alert")).toHaveCount(2);
+  const rankings = page.getByRole("region", { name: "Leaderboards", exact: true });
+  const community = page.getByRole("region", { name: "Featured Viewers", exact: true });
+  await page.unroute("**/api/leaderboards/summary?*");
+  await rankings.getByRole("button", { name: "Try rankings again" }).click();
+  await expect(rankings.getByRole("link", { name: /Community Viewer 01/ })).toHaveCount(3);
+  await expect(community.getByRole("alert")).toBeVisible();
+  await page.unroute("**/api/users/random?*");
+  await community.getByRole("button", { name: "Try viewers again" }).click();
+  await expect(community.getByRole("link", { name: /Community Viewer/ })).not.toHaveCount(0);
+  await page.route("**/api/users/random?*", route => route.fulfill({ json: { success: true, data: [] } }));
+  await page.reload();
+  await expect(community.getByText("No viewers yet.")).toBeVisible();
+  await expect(community.getByRole("link", { name: "View All" })).toBeVisible();
+});
+
 test("VOD browsing exposes activity, viewer filtering and an honest unavailable recording state", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));

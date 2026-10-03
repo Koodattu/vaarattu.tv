@@ -8,6 +8,7 @@ import leaderboardRoutes from "./routes/leaderboard.routes";
 import userRoutes from "./routes/user.routes";
 import streamRoutes from "./routes/stream.routes";
 import modRoutes from "./routes/mod.routes";
+import clipRoutes from "./routes/clip.routes";
 
 // Smart .env loading for both development and production
 const envPath =
@@ -29,6 +30,7 @@ app.use("/api/leaderboards", leaderboardRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/streams", streamRoutes);
 app.use("/api/mod", modRoutes);
+app.use("/api/clips", clipRoutes);
 
 // 404 handler for unknown routes
 app.use((req, res) => {

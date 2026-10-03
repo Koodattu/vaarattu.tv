@@ -11,6 +11,7 @@ const polling = require("../src/twitch/api/streamPolling.service");
 const eventsub = require("../src/twitch/api/eventsub");
 const chat = require("../src/twitch/api/chat");
 const handlers = require("../src/twitch/api/chatHandlers");
+const clips = require("../src/services/clip.service");
 const youtube = require("../src/services/youtube.service");
 const openai = require("../src/services/openai.service");
 const rewards = require("../src/services/channelReward.service");
@@ -33,7 +34,7 @@ function setup(t, missing = []) {
   t.mock.method(eventsub, "startEventSubWs", async () => { calls.push("eventsub"); });
   t.mock.method(chat, "tryCreateChatClient", async () => ({ connect: async () => { calls.push("bot"); } }));
   t.mock.method(handlers, "registerChatHandlers", () => {});
-  for (const [module, name] of [[youtube, "startYoutubeSync"], [openai, "testOpenAIConnection"], [rewards, "syncChannelPointRewards"], [badges, "updateAvailableBadges"], [emotes, "initializeEmotes"]]) {
+  for (const [module, name] of [[clips, "startClipSync"], [youtube, "startYoutubeSync"], [openai, "testOpenAIConnection"], [rewards, "syncChannelPointRewards"], [badges, "updateAvailableBadges"], [emotes, "initializeEmotes"]]) {
     t.mock.method(module, name, async () => {});
   }
   return { start, calls, authorized, errors };
@@ -41,13 +42,13 @@ function setup(t, missing = []) {
 
 test("all optional startup failures leave polling, EventSub and bot collection running", async (t) => {
   const { start, calls, errors } = setup(t);
-  for (const [module, name] of [[youtube, "startYoutubeSync"], [openai, "testOpenAIConnection"], [rewards, "syncChannelPointRewards"], [badges, "updateAvailableBadges"], [emotes, "initializeEmotes"]]) {
+  for (const [module, name] of [[clips, "startClipSync"], [youtube, "startYoutubeSync"], [openai, "testOpenAIConnection"], [rewards, "syncChannelPointRewards"], [badges, "updateAvailableBadges"], [emotes, "initializeEmotes"]]) {
     t.mock.method(module, name, () => { throw new Error("Service unavailable"); });
   }
   await start();
   await flush();
   assert.deepEqual(calls, ["polling", "eventsub", "bot"]);
-  assert.equal(errors.mock.callCount(), 5);
+  assert.equal(errors.mock.callCount(), 6);
 });
 
 test("stalled optional services cannot delay collection or launch overlapping refreshes", async (t) => {
@@ -56,7 +57,7 @@ test("stalled optional services cannot delay collection or launch overlapping re
   const pending = new Promise((resolve) => { release = resolve; });
   t.after(async () => { release(); await flush(); });
   const mocks = [];
-  for (const [module, name] of [[youtube, "startYoutubeSync"], [openai, "testOpenAIConnection"], [rewards, "syncChannelPointRewards"], [badges, "updateAvailableBadges"], [emotes, "initializeEmotes"]]) {
+  for (const [module, name] of [[clips, "startClipSync"], [youtube, "startYoutubeSync"], [openai, "testOpenAIConnection"], [rewards, "syncChannelPointRewards"], [badges, "updateAvailableBadges"], [emotes, "initializeEmotes"]]) {
     mocks.push(t.mock.method(module, name, () => pending));
   }
   await start();

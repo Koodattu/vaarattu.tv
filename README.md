@@ -26,7 +26,7 @@ Track everything that happens on stream — from chat messages and watchtime to 
 - **Leaderboards**: Compete across multiple categories and see where you rank
 - **Stream History**: Search stream titles and games, filter by date or recording availability, and keep your place when returning
 - **Replay Moments**: Open chapters and activity peaks with synchronized chat, switch between recordings, and share timestamped links
-- **Clips Showcase**: Highlight the best moments (planned)
+- **Clips Showcase**: Search community clips, filter featured moments, watch and share a permalink
 
 ### For Streamers
 
@@ -100,11 +100,11 @@ vaarattu.tv/
 - Watchtime and session tracking
 - Stream timelines showing viewer presence
 - Searchable VOD archive, linked chapters and accessible activity charts ([usage and API](docs/stream-browsing.md))
+- Searchable Twitch clips, popular home previews and shareable watch pages ([usage and API](docs/clips.md))
 - Moderator message search tools
 
 ### 🚧 In Progress
 
-- Clips system
 - Game/category tracking polish
 
 ### 📋 Planned

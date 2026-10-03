@@ -12,6 +12,7 @@ import { testOpenAIConnection } from "./services/openai.service";
 import { startStreamStatusPolling } from "./twitch/api/streamPolling.service";
 import fs from "fs";
 import { startYoutubeSync } from "./services/youtube.service";
+import { startClipSync } from "./services/clip.service";
 import prisma from "./prismaClient";
 import { registerChatHandlers } from "./twitch/api/chatHandlers";
 
@@ -33,6 +34,7 @@ export async function start() {
       collecting = true;
       startStreamStatusPolling();
       runBackgroundTask("EventSub", startEventSubWs);
+      runBackgroundTask("Clips", startClipSync);
       refreshChannelMetadata();
     }
     if (!botStarted && fs.existsSync(tokens.bot)) {

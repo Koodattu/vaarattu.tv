@@ -2,6 +2,8 @@
 
 ## Active program — stream discovery and replay, 2026-10-03
 
+Continuation audit: the active goal file is now `79db0f85-246e-475f-a065-b8b090eb37fd/pasted-text-1.txt`, which explicitly requires discovery through an evidence-based stopping assessment followed by commit, push and deployment. Stream release33da034 is live; the next coherent release includes the locally verified clips implementation. See [clips/STATE.md](clips/STATE.md) for implementation evidence and the final cross-product/release audit. The preceding goal turn was progress (implementation and verification), but a local-only ending did not satisfy the active goal's release requirement.
+
 The prior local-improvement goal below was subsequently committed and deployed as
 `56eafdb009138748912dbbd6576ad778f18da839`. The newly authorized product-development
 and release goal starts from that clean `main` revision. Its current working record

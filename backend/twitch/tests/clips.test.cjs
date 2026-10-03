@@ -1,0 +1,50 @@
+const assert = require("node:assert/strict");
+const { test } = require("node:test");
+const prismaModule = require("../src/prismaClient");
+const prisma = { clip: { findMany: async () => [] }, $transaction: async () => [] };
+prismaModule.default = prisma;
+const auth = require("../src/twitch/auth/authProviders");
+const twitch = require("../src/twitch/api/twitchApi");
+const { startClipSync } = require("../src/services/clip.service");
+const flush = () => new Promise(resolve => setImmediate(resolve));
+
+test("clip refresh is bounded, does not overlap, and retries without exposing upstream error details", async t => {
+  let tick, expire;
+  const timer = t.mock.method(globalThis, "setInterval", (callback, delay) => {
+    assert.equal(delay, 15 * 60000); tick = callback; return { unref() {} };
+  });
+  t.mock.method(globalThis, "setTimeout", (callback, delay) => {
+    assert.equal(delay, 20000); expire = callback; return 1;
+  });
+  t.mock.method(globalThis, "clearTimeout", () => {});
+  t.mock.method(auth, "getUserId", () => "clip-test-owner");
+  let release;
+  let operation = () => new Promise(resolve => { release = resolve; });
+  const page = t.mock.fn(() => operation());
+  t.mock.method(twitch, "getTwitchApiClientWithStreamer", async () => ({ clips: { getClipsForBroadcaster: page } }));
+  t.mock.method(prisma.clip, "findMany", async () => []);
+  const write = t.mock.method(prisma, "$transaction", async () => []);
+  const errors = t.mock.method(console, "error", () => {});
+  const logs = t.mock.method(console, "log", () => {});
+  startClipSync();
+  await flush();
+  await tick();
+  assert.equal(page.mock.callCount(), 1);
+  expire();
+  await flush();
+  assert.equal(errors.mock.callCount(), 1);
+  assert.equal(write.mock.callCount(), 0);
+  release({ data: [] });
+  await flush();
+  assert.equal(write.mock.callCount(), 0, "a late timed-out response cannot publish data");
+  operation = async () => { throw new Error("Private upstream credential must not appear"); };
+  await tick();
+  assert.equal(errors.mock.callCount(), 2);
+  assert.ok(errors.mock.calls.every(call => !call.arguments.join(" ").includes("credential")));
+  operation = async () => ({ data: [] });
+  await tick();
+  assert.equal(write.mock.callCount(), 1);
+  assert.equal(logs.mock.callCount(), 1);
+  startClipSync();
+  assert.equal(timer.mock.callCount(), 1);
+});

@@ -1,0 +1,69 @@
+{
+  "environment": "Chromium; Next production standalone; PostgreSQL17, 1CPU/384MiB; 15 available synthetic clips",
+  "requests": [
+    {
+      "milliseconds": 4.5049000000000206,
+      "bytes": 4079,
+      "rows": 12
+    },
+    {
+      "milliseconds": 3.7486000000000104,
+      "bytes": 4079,
+      "rows": 12
+    },
+    {
+      "milliseconds": 3.303200000000004,
+      "bytes": 4079,
+      "rows": 12
+    },
+    {
+      "milliseconds": 3.073599999999999,
+      "bytes": 4079,
+      "rows": 12
+    },
+    {
+      "milliseconds": 2.6971000000000345,
+      "bytes": 4079,
+      "rows": 12
+    },
+    {
+      "milliseconds": 3.0365000000000464,
+      "bytes": 4079,
+      "rows": 12
+    },
+    {
+      "milliseconds": 2.3601999999999634,
+      "bytes": 4079,
+      "rows": 12
+    }
+  ],
+  "layouts": [
+    {
+      "surface": "archive",
+      "width": 1366,
+      "scrollWidth": 1366
+    },
+    {
+      "surface": "archive",
+      "width": 768,
+      "scrollWidth": 768
+    },
+    {
+      "surface": "archive",
+      "width": 375,
+      "scrollWidth": 375
+    },
+    {
+      "surface": "archive",
+      "width": 320,
+      "scrollWidth": 320
+    }
+  ],
+  "textScale": "200% at 375px, including 200-character unbroken title and broken image",
+  "focus": {
+    "outline": "solid",
+    "width": "2px"
+  },
+  "errors": [],
+  "providerPlayback": "not exercised; external requests blocked"
+}

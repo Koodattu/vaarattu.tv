@@ -1,0 +1,58 @@
+{
+  "environment": "Production standalone Chromium, synthetic API only",
+  "surfaces": [
+    {
+      "route": "/",
+      "width": 320,
+      "headings": [
+        "Recent VODs",
+        "Community night — a synthetic local recording",
+        "Back to the caves — community expedition",
+        "Community archive 02 — Hollow Knight",
+        "Popular clips",
+        "Leaderboards",
+        "Featured Viewers"
+      ],
+      "hero": {
+        "bottom": 677,
+        "frames": [
+          {
+            "title": "vaarattu's Twitch Stream",
+            "bottom": 381
+          },
+          {
+            "title": "vaarattu's Twitch Chat",
+            "bottom": 653
+          }
+        ]
+      }
+    },
+    {
+      "route": "/profiles/viewer01/timelines",
+      "width": 320,
+      "headings": [
+        "Community Viewer 01's Timelines"
+      ]
+    },
+    {
+      "route": "/leaderboards",
+      "width": 320,
+      "headings": [
+        "Leaderboards",
+        "Reward Champions"
+      ]
+    },
+    {
+      "route": "/profiles/newviewer",
+      "width": 320,
+      "headings": [
+        "New Viewer",
+        "New Viewer",
+        "📝 About",
+        "New Viewer"
+      ]
+    }
+  ],
+  "roundTrip": "profile presence history → full stream timeline → filtered viewer → profile",
+  "errors": []
+}

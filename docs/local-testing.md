@@ -53,7 +53,7 @@ npm.cmd test --prefix backend/twitch
 npm.cmd test --prefix backend/web
 ```
 
-The recording integration suite imports the collector's compiled services, so
+The recording and clips integration suites import the collector's compiled services, so
 build `backend/twitch` before the web tests. Both test scripts run serially. Web
 database suites skip when `VOD_TEST_DATABASE_URL` is absent; a run with skips does
 not verify database behavior. The collector suite uses external-service test
@@ -83,16 +83,21 @@ requests outside these two local origins. Fixtures include 26 viewers, 27 stream
 The archive has three games, long chapter titles, unavailable recordings, split
 YouTube parts, Twitch alternatives and gaps in recording/audience coverage.
 The fixture API never loads `.env` files or starts the live collector.
+Clip fixtures add 15 available clips and one unavailable permalink, with featured
+flags, multiple games, dates and a missing thumbnail. They contain no real Twitch media.
 
 Coverage includes discovery → profile → histories, leaderboard pagination and
 filters, retries and partial failures, stale requests, local calendar dates,
 VOD detail/timeline/unavailable playback, archive filters and pagination, linked
 chapters, split-recording offsets, synchronized chat, source switches, shared
 moments, activity peaks/gaps, refresh recovery, mobile and keyboard navigation.
+Clips coverage includes home previews, search/filter/page preservation, empty and
+error recovery, watch/share links, a stalled iframe, and narrow-screen fallback.
 Player SDKs are doubled at the external boundary; this verifies our playback
 mapping and recovery, not the availability of real Twitch or YouTube recordings.
 Failed runs save traces in `frontend/test-results`; screenshots are written to
 `work/goal-improvement/stream-release`. These are synthetic records only.
+Clips screenshots and the review log are under `work/goal-improvement/clips`.
 
 For manual review, start these commands in separate terminals:
 

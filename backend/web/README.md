@@ -48,6 +48,15 @@ The server will start on port 3001 (configurable via `WEB_API_PORT` environment 
 - `GET /api/streams` - List all past streams
 - `GET /api/streams/:id/timeline` - Detailed stream timeline with viewer sessions
 
+### Clips
+
+- `GET /api/clips` - Available clips with pagination, title/game/clipper search (`q`),
+  `sort=popular|newest`, `period=all|7d|30d`, and `featured=true|false`
+- `GET /api/clips/:id` - A Twitch clip slug's metadata, availability and exact source-stream link
+
+See [clips behavior and collection](../../docs/clips.md). Clip IDs are Twitch slugs,
+not numeric database IDs; an unavailable saved clip still has a readable permalink.
+
 ### Moderation (Future: Auth Required)
 
 - `GET /api/mod/users/:userId/messages` - Get a page of messages from a specific user

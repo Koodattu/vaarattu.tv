@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { apiClient } from "@/lib/api";
-import { LeaderboardSummary, LeaderboardUser } from "@/types/api";
+import { LeaderboardUser } from "@/types/api";
 import { formatDuration } from "@/lib/utils";
+import { useApiQuery } from "@/hooks/useApiQuery";
 
 function getRankBadge(rank: number): React.ReactNode {
   const baseClass = "w-6 h-6 flex items-center justify-center rounded-full text-sm font-bold";
@@ -33,13 +34,13 @@ interface LeaderboardColumnProps {
 
 function LeaderboardColumn({ title, icon, users, getValue, label, href, loading }: LeaderboardColumnProps) {
   return (
-    <div className="bg-gray-700/50 rounded-lg p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-lg font-semibold text-white flex items-center gap-2">
+    <div className="min-w-0 bg-gray-800 rounded-lg p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
           <span>{icon}</span>
           {title}
-        </h4>
-        <Link href={href} className="text-purple-400 hover:text-purple-300 transition-colors text-xs">
+        </h3>
+        <Link href={href} className="inline-flex min-h-11 items-center text-purple-300 hover:text-purple-200 text-sm">
           View all →
         </Link>
       </div>
@@ -58,27 +59,27 @@ function LeaderboardColumn({ title, icon, users, getValue, label, href, loading 
           ))}
         </div>
       ) : users.length === 0 ? (
-        <p className="text-gray-500 text-sm py-4 text-center">No data yet</p>
+        <p className="text-gray-400 text-sm py-4 text-center">No data yet</p>
       ) : (
         <div className="space-y-2">
           {users.map((user, index) => (
             <Link
               key={user.id}
               href={`/profiles/${user.login}`}
-              className="flex items-center gap-3 py-2 border-b border-gray-600 last:border-0 hover:bg-gray-600/50 rounded px-2 -mx-2 transition-colors"
+              className="grid grid-cols-[1.5rem_minmax(0,1fr)_auto] sm:grid-cols-[1.5rem_2rem_minmax(0,1fr)_auto] items-center gap-2 py-2 border-b border-gray-600 last:border-0 hover:bg-gray-700 rounded px-2 -mx-2 transition-colors"
             >
               {getRankBadge(index + 1)}
               {user.avatar ? (
-                <Image src={user.avatar} alt={user.displayName} width={32} height={32} className="rounded-full" />
+                <Image src={user.avatar} alt="" width={32} height={32} className="hidden sm:block rounded-full" />
               ) : (
-                <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center text-gray-400 text-xs">{user.displayName[0].toUpperCase()}</div>
+                <div aria-hidden="true" className="hidden sm:flex w-8 h-8 bg-gray-600 rounded-full items-center justify-center text-gray-200 text-xs">{user.displayName[0].toUpperCase()}</div>
               )}
               <div className="flex-1 min-w-0">
-                <span className="text-white font-medium truncate block">{user.displayName}</span>
+                <span className="text-white text-sm font-medium break-words block">{user.displayName}</span>
               </div>
               <div className="text-right">
                 <div className="text-white font-medium text-sm">{getValue(user)}</div>
-                <div className="text-gray-500 text-xs">{label}</div>
+                <div className="text-gray-400 text-xs">{label}</div>
               </div>
             </Link>
           ))}
@@ -89,32 +90,23 @@ function LeaderboardColumn({ title, icon, users, getValue, label, href, loading 
 }
 
 export function LeaderboardTeaser() {
-  const [summary, setSummary] = useState<LeaderboardSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      const res = await apiClient.getLeaderboardSummary("all");
-      if (res.success && res.data) {
-        setSummary(res.data);
-      }
-      setLoading(false);
-    };
-
-    fetchData();
-  }, []);
+  const { response, loading, retry } = useApiQuery(useCallback((signal: AbortSignal) => apiClient.getLeaderboardSummary("all", signal), []));
+  const summary = response?.data;
 
   return (
-    <div className="bg-gray-800 rounded-lg p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-2xl font-bold text-white">🏆 Leaderboards</h3>
-        <Link href="/leaderboards" className="text-purple-400 hover:text-purple-300 transition-colors text-sm font-medium">
+    <section aria-labelledby="home-leaderboards">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <h2 id="home-leaderboards" className="text-2xl font-bold text-white">Leaderboards</h2>
+        <Link href="/leaderboards" className="inline-flex min-h-11 items-center text-purple-300 hover:text-purple-200 text-sm font-medium">
           View all leaderboards →
         </Link>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4">
+      {response?.error ? <div role="alert" className="rounded-lg border border-gray-700 bg-gray-800 p-5">
+        <p className="text-gray-300">Rankings couldn&apos;t be loaded.</p><button type="button" onClick={retry} className="mt-3 min-h-11 rounded-md bg-gray-700 px-4 py-2 text-sm text-white hover:bg-gray-600">Try rankings again</button>
+      </div> : <>
+      {loading && <p role="status" className="sr-only">Loading rankings…</p>}
+      <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-3 gap-4">
         <LeaderboardColumn
           title="Watchtime"
           icon="⏱️"
@@ -145,12 +137,7 @@ export function LeaderboardTeaser() {
           loading={loading}
         />
       </div>
-
-      <div className="mt-6 pt-4 border-t border-gray-700 text-center">
-        <Link href="/leaderboards" className="inline-block px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-sm font-medium transition-colors">
-          View Full Leaderboards
-        </Link>
-      </div>
-    </div>
+      </>}
+    </section>
   );
 }

@@ -1,10 +1,11 @@
 "use client";
 
-import { use, useEffect, useMemo, useState } from "react";
+import { use, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { apiClient } from "@/lib/api";
 import { formatDate, formatDuration } from "@/lib/utils";
-import { UserProfile, UserViewSession } from "@/types/api";
+import { UserViewSession } from "@/types/api";
+import { useApiQuery } from "@/hooks/useApiQuery";
 
 interface TimelinesPageProps {
   params: Promise<{ login: string }>;
@@ -22,38 +23,20 @@ interface StreamGroup {
 
 export default function UserTimelinesPage({ params }: TimelinesPageProps) {
   const { login } = use(params);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [sessions, setSessions] = useState<UserViewSession[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-
-      const profileRes = await apiClient.getUserProfileByLogin(login);
-      if (!profileRes.success || !profileRes.data) {
-        setError(profileRes.error || "User not found");
-        setLoading(false);
-        return;
-      }
-
-      setProfile(profileRes.data);
-
-      const sessionsRes = await apiClient.getUserViewSessions(profileRes.data.id);
-      if (sessionsRes.success && sessionsRes.data) {
-        setSessions(sessionsRes.data);
-      }
-
-      setLoading(false);
-    };
-
-    fetchData();
-  }, [login]);
+  const { response, loading, retry } = useApiQuery(useCallback(async (signal: AbortSignal) => {
+    const profileRes = await apiClient.getUserProfileByLogin(login, signal);
+    if (!profileRes.success || !profileRes.data) return { success: false, error: profileRes.error || "User not found" };
+    const sessionsRes = await apiClient.getUserViewSessions(profileRes.data.id, signal);
+    if (!sessionsRes.success || !sessionsRes.data) return { success: false, error: sessionsRes.error || "Session history could not be loaded." };
+    return { success: true, data: { profile: profileRes.data, sessions: sessionsRes.data } };
+  }, [login]));
+  const profile = response?.data?.profile;
+  const sessions = response?.data?.sessions;
+  const error = response?.error;
 
   // Group sessions by stream, sorted newest first
   const streamGroups = useMemo<StreamGroup[]>(() => {
+    if (!sessions) return [];
     const grouped = sessions.reduce<Record<number, StreamGroup>>((acc, s) => {
       if (!acc[s.streamId]) {
         acc[s.streamId] = {
@@ -77,7 +60,7 @@ export default function UserTimelinesPage({ params }: TimelinesPageProps) {
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center py-12">
+        <div role="status" className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
           <span className="ml-3 text-gray-400">Loading timelines...</span>
         </div>
@@ -91,9 +74,10 @@ export default function UserTimelinesPage({ params }: TimelinesPageProps) {
         <Link href={`/profiles/${login}`} className="text-purple-400 hover:text-purple-300 transition-colors text-sm mb-4 inline-block">
           ← Back to Profile
         </Link>
-        <div className="bg-red-900/30 border border-red-700 rounded-lg p-6 text-center">
+        <div role="alert" className="bg-red-900/30 border border-red-700 rounded-lg p-6 text-center">
           <p className="text-red-400 mb-2">Failed to load timelines</p>
-          <p className="text-gray-500 text-sm">{error}</p>
+          <p className="text-gray-300 text-sm">{error}</p>
+          <button type="button" onClick={retry} className="mt-3 min-h-11 rounded-md bg-gray-800 px-4 py-2 text-white hover:bg-gray-700">Try again</button>
         </div>
       </div>
     );

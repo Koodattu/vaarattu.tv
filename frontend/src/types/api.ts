@@ -13,6 +13,33 @@ export interface PaginationInfo {
   totalPages: number;
 }
 
+export interface ClipPreview {
+  id: string;
+  title: string;
+  creatorName: string;
+  gameName: string | null;
+  thumbnailUrl: string | null;
+  createdAt: string;
+  durationSeconds: number;
+  viewCount: number;
+  isFeatured: boolean;
+  checkedAt: string;
+}
+
+export interface ClipDetail extends ClipPreview {
+  available: boolean;
+  videoId: string | null;
+  vodOffsetSeconds: number | null;
+  streamId: number | null;
+}
+
+export interface ClipFilters {
+  q?: string;
+  sort?: "popular" | "newest";
+  period?: "all" | "7d" | "30d";
+  featured?: boolean;
+}
+
 // Stream types
 export interface StreamListItem {
   recordingSources: Array<"twitch" | "youtube">;

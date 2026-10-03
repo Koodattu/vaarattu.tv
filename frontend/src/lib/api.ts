@@ -1,5 +1,8 @@
 import {
   ApiResponse,
+  ClipPreview,
+  ClipDetail,
+  ClipFilters,
   ChatReplayPage,
   StreamListItem,
   StreamDetail,
@@ -44,6 +47,16 @@ class ApiClient {
           : "Unable to connect. Check your connection and try again.",
       };
     }
+  }
+
+  async getClips(page = 1, limit = 12, filters: ClipFilters = {}, signal?: AbortSignal): Promise<ApiResponse<ClipPreview[]>> {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    for (const [key, value] of Object.entries(filters)) if (value) params.set(key, String(value));
+    return this.fetchApi<ClipPreview[]>(`/api/clips?${params}`, signal);
+  }
+
+  async getClip(id: string, signal?: AbortSignal): Promise<ApiResponse<ClipDetail>> {
+    return this.fetchApi<ClipDetail>(`/api/clips/${encodeURIComponent(id)}`, signal);
   }
 
   // Stream endpoints
@@ -137,8 +150,8 @@ class ApiClient {
     return this.fetchApi<UserProfile>(`/api/users/login/${encodeURIComponent(login)}`, signal);
   }
 
-  async getUserViewSessions(userId: number): Promise<ApiResponse<UserViewSession[]>> {
-    return this.fetchApi<UserViewSession[]>(`/api/users/${userId}/sessions`);
+  async getUserViewSessions(userId: number, signal?: AbortSignal): Promise<ApiResponse<UserViewSession[]>> {
+    return this.fetchApi<UserViewSession[]>(`/api/users/${userId}/sessions`, signal);
   }
 
   async getUserMessages(userId: number, page: number = 1, limit: number = 100, search?: string, signal?: AbortSignal): Promise<ApiResponse<UserMessage[]>> {

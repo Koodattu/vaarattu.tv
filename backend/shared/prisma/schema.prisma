@@ -193,6 +193,28 @@ model StreamViewerSample {
   @@unique([streamId, timestamp])
 }
 
+// Cached public Twitch metadata; video stays hosted by Twitch.
+model Clip {
+  id               String   @id
+  broadcasterId    String
+  title            String
+  creatorName      String
+  gameId           String?
+  gameName         String?
+  thumbnailUrl     String?
+  createdAt        DateTime
+  durationSeconds  Float
+  viewCount        Int
+  isFeatured       Boolean  @default(false)
+  videoId          String?
+  vodOffsetSeconds Int?
+  available        Boolean  @default(true)
+  checkedAt        DateTime
+
+  @@index([available, createdAt, id])
+  @@index([available, viewCount, createdAt, id])
+}
+
 model StreamSegment {
   id        Int      @id @default(autoincrement())
   streamId  Int
