@@ -1,5 +1,9 @@
 # Improvement goal
 
+## Active program — community discovery, 2026-10-06
+
+The current autonomous goal starts at clean `main` revision `07c708b18f202fb2098422ae52db092fe1f8d70e`. No staged, unstaged or untracked user work existed. The detailed current record is [community/STATE.md](community/STATE.md); previous sections below are historical. Request: `a2885613-51a6-4f79-a361-7785dd9f8b76/pasted-text-1.txt`. One agent; implementation, commit, normal push and established deployment authorized.
+
 ## Active program — stream discovery and replay, 2026-10-03
 
 Continuation audit: the active goal file is now `79db0f85-246e-475f-a065-b8b090eb37fd/pasted-text-1.txt`, which explicitly requires discovery through an evidence-based stopping assessment followed by commit, push and deployment. Stream release33da034 is live; the next coherent release includes the locally verified clips implementation. See [clips/STATE.md](clips/STATE.md) for implementation evidence and the final cross-product/release audit. The preceding goal turn was progress (implementation and verification), but a local-only ending did not satisfy the active goal's release requirement.

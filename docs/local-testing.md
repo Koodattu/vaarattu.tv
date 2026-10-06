@@ -22,15 +22,16 @@ Pop-Location
 
 ## Create a disposable database
 
-Use an unused container name and port 55489. The integration tests and browser
+Use an unused container name and port 35489 (the former 55489 can be reserved by
+Windows' dynamic excluded-port ranges). The integration tests and browser
 fixture server deliberately accept only the URL below. Do not reuse a database
 containing data you want to keep: the existing recording suite clears tables.
 
 ```powershell
 $testContainer = 'vaarattu-local-tests'
-docker run --detach --rm --name $testContainer --publish 127.0.0.1:55489:5432 --memory 384m --cpus 1 --env POSTGRES_HOST_AUTH_METHOD=trust --tmpfs /var/lib/postgresql/data:rw postgres:17.10-alpine3.23
+docker run --detach --rm --name $testContainer --publish 127.0.0.1:35489:5432 --memory 384m --cpus 1 --env POSTGRES_HOST_AUTH_METHOD=trust --tmpfs /var/lib/postgresql/data:rw postgres:17.10-alpine3.23
 docker exec $testContainer pg_isready -U postgres
-$env:VOD_TEST_DATABASE_URL = 'postgresql://postgres@127.0.0.1:55489/postgres'
+$env:VOD_TEST_DATABASE_URL = 'postgresql://postgres@127.0.0.1:35489/postgres'
 $env:DATABASE_URL = $env:VOD_TEST_DATABASE_URL
 Push-Location backend/shared
 npx.cmd --no-install prisma migrate deploy
@@ -102,7 +103,7 @@ Clips screenshots and the review log are under `work/goal-improvement/clips`.
 For manual review, start these commands in separate terminals:
 
 ```powershell
-$env:VOD_TEST_DATABASE_URL = 'postgresql://postgres@127.0.0.1:55489/postgres'
+$env:VOD_TEST_DATABASE_URL = 'postgresql://postgres@127.0.0.1:35489/postgres'
 node backend/web/tests/browser-server.cjs
 ```
 

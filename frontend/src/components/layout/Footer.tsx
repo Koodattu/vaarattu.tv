@@ -16,7 +16,7 @@ export function Footer() {
           </div>
 
           {/* Links */}
-          <div className="flex items-center gap-6">
+          <div className="flex max-w-full flex-wrap items-center justify-center gap-x-6 gap-y-2">
             <a href="https://twitch.tv/vaarattu" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-purple-400 transition-colors text-sm">
               Twitch
             </a>

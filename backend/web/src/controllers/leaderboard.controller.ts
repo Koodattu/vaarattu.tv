@@ -50,7 +50,8 @@ export class LeaderboardController {
     const sortBy = parseChoice(req.query.sortBy, "sort order", ["messages", "watchtime", "points"] as const, "messages");
     const timeRange = parseTimeRange(req.query);
 
-    const { users, total } = await leaderboardService.getTopUsers(page, limit, sortBy, timeRange);
+    const search = parseTextQuery(req.query.search, "Search");
+    const { users, total } = await leaderboardService.getTopUsers(page, limit, sortBy, timeRange, search);
 
     res.json({
       success: true,
@@ -76,7 +77,8 @@ export class LeaderboardController {
     const { page, limit } = parsePaginationQuery(req.query);
     const timeRange = parseTimeRange(req.query);
 
-    const { gifters, total } = await leaderboardService.getTopSubscriptionGifters(page, limit, timeRange);
+    const search = parseTextQuery(req.query.search, "Search");
+    const { gifters, total } = await leaderboardService.getTopSubscriptionGifters(page, limit, timeRange, search);
 
     res.json({
       success: true,
@@ -89,7 +91,8 @@ export class LeaderboardController {
     const { page, limit } = parsePaginationQuery(req.query);
     const timeRange = parseTimeRange(req.query);
 
-    const { cheers, total } = await leaderboardService.getTopCheers(page, limit, timeRange);
+    const search = parseTextQuery(req.query.search, "Search");
+    const { cheers, total } = await leaderboardService.getTopCheers(page, limit, timeRange, search);
 
     res.json({
       success: true,

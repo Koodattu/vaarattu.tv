@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const { test } = require("node:test");
 
 test("stream archive filters through the public API", { skip: !process.env.VOD_TEST_DATABASE_URL }, async t => {
-  assert.equal(process.env.VOD_TEST_DATABASE_URL, "postgresql://postgres@127.0.0.1:55489/postgres");
+  assert.equal(process.env.VOD_TEST_DATABASE_URL, "postgresql://postgres@127.0.0.1:35489/postgres");
   process.env.DATABASE_URL = process.env.VOD_TEST_DATABASE_URL;
   const prisma = require("../src/prismaClient").default;
   const app = require("express")();

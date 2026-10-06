@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const { test } = require("node:test");
 
 test("Twitch clips become a searchable public catalog", { skip: !process.env.VOD_TEST_DATABASE_URL }, async t => {
-  assert.equal(process.env.VOD_TEST_DATABASE_URL, "postgresql://postgres@127.0.0.1:55489/postgres");
+  assert.equal(process.env.VOD_TEST_DATABASE_URL, "postgresql://postgres@127.0.0.1:35489/postgres");
   // One collector connection lets the regression exercise real session timezones.
   process.env.DATABASE_URL = `${process.env.VOD_TEST_DATABASE_URL}?connection_limit=1`;
   const auth = require("../../twitch/dist/twitch/auth/authProviders");

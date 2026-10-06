@@ -93,8 +93,9 @@ class ApiClient {
     page: number = 1,
     limit: number = 20,
     signal?: AbortSignal,
+    search?: string,
   ): Promise<ApiResponse<LeaderboardUser[]>> {
-    return this.fetchApi<LeaderboardUser[]>(`/api/leaderboards/users?sortBy=${sortBy}&page=${page}&limit=${limit}&timeRange=${timeRange}`, signal);
+    return this.fetchApi<LeaderboardUser[]>(`/api/leaderboards/users?sortBy=${sortBy}&page=${page}&limit=${limit}&timeRange=${timeRange}&search=${encodeURIComponent(search || "")}`, signal);
   }
 
   async getTopEmotes(platform?: string, timeRange: TimeRange = "all", page: number = 1, limit: number = 20, signal?: AbortSignal): Promise<ApiResponse<LeaderboardEmote[]>> {
@@ -111,12 +112,12 @@ class ApiClient {
     return this.fetchApi<LeaderboardReward[]>(`/api/leaderboards/rewards?page=${page}&limit=${limit}&timeRange=${timeRange}`, signal);
   }
 
-  async getTopGiftedSubs(timeRange: TimeRange = "all", page: number = 1, limit: number = 20, signal?: AbortSignal): Promise<ApiResponse<LeaderboardSubscriptionGift[]>> {
-    return this.fetchApi<LeaderboardSubscriptionGift[]>(`/api/leaderboards/gifts?page=${page}&limit=${limit}&timeRange=${timeRange}`, signal);
+  async getTopGiftedSubs(timeRange: TimeRange = "all", page: number = 1, limit: number = 20, signal?: AbortSignal, search?: string): Promise<ApiResponse<LeaderboardSubscriptionGift[]>> {
+    return this.fetchApi<LeaderboardSubscriptionGift[]>(`/api/leaderboards/gifts?page=${page}&limit=${limit}&timeRange=${timeRange}&search=${encodeURIComponent(search || "")}`, signal);
   }
 
-  async getTopCheers(timeRange: TimeRange = "all", page: number = 1, limit: number = 20, signal?: AbortSignal): Promise<ApiResponse<LeaderboardCheer[]>> {
-    return this.fetchApi<LeaderboardCheer[]>(`/api/leaderboards/cheers?page=${page}&limit=${limit}&timeRange=${timeRange}`, signal);
+  async getTopCheers(timeRange: TimeRange = "all", page: number = 1, limit: number = 20, signal?: AbortSignal, search?: string): Promise<ApiResponse<LeaderboardCheer[]>> {
+    return this.fetchApi<LeaderboardCheer[]>(`/api/leaderboards/cheers?page=${page}&limit=${limit}&timeRange=${timeRange}&search=${encodeURIComponent(search || "")}`, signal);
   }
 
   async getRewardLeaderboard(rewardId: string, timeRange: TimeRange = "all", page: number = 1, limit: number = 20, signal?: AbortSignal): Promise<ApiResponse<RewardUserLeaderboard>> {

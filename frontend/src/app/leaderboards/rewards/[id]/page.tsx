@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, Suspense } from "react";
+import { useCallback, Suspense } from "react";
 import { useSearchParams, useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -8,13 +8,8 @@ import { TimeRange } from "@/types/api";
 import { apiClient } from "@/lib/api";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { Pagination } from "@/components/Pagination";
-
-const TIME_RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
-  { value: "all", label: "All Time" },
-  { value: "year", label: "Past Year" },
-  { value: "month", label: "Past Month" },
-  { value: "week", label: "Past Week" },
-];
+import { LeaderboardPeriod } from "@/components/leaderboards/LeaderboardControls";
+import { leaderboardHref, parseLeaderboardPage, parseTimeRange } from "@/lib/leaderboards";
 
 function getRankBadge(rank: number): string {
   if (rank === 1) return "🥇";
@@ -31,18 +26,15 @@ function RewardDetailContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const rewardId = params.id as string;
-  const initialTimeRange = (searchParams.get("timeRange") as TimeRange) || "all";
-
-  const [timeRange, setTimeRange] = useState<TimeRange>(initialTimeRange);
-  const [page, setPage] = useState(1);
+  const timeRange = parseTimeRange(searchParams.get("timeRange"));
+  const page = parseLeaderboardPage(searchParams.get("page"));
   const pageSize = 25;
   const { response, loading, retry } = useApiQuery(useCallback((signal: AbortSignal) => apiClient.getRewardLeaderboard(rewardId, timeRange, page, pageSize, signal), [rewardId, timeRange, page]));
   const leaderboard = response?.data;
   const error = response?.error;
 
   const handleTimeRangeChange = (newRange: TimeRange) => {
-    setTimeRange(newRange);
-    setPage(1);
+    window.history.pushState(null, "", leaderboardHref(`/leaderboards/rewards/${encodeURIComponent(rewardId)}`, newRange));
   };
 
   return (
@@ -79,21 +71,7 @@ function RewardDetailContent() {
               </div>
             </div>
 
-            {/* Time Range Selector */}
-            <div className="flex flex-wrap gap-2">
-              {TIME_RANGE_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  aria-pressed={timeRange === option.value}
-                  onClick={() => handleTimeRangeChange(option.value)}
-                  className={`min-h-11 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    timeRange === option.value ? "bg-purple-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
+            <LeaderboardPeriod value={timeRange} onChange={handleTimeRangeChange} />
           </div>
 
           {/* Leaderboard Table */}
@@ -127,7 +105,7 @@ function RewardDetailContent() {
               </div>
             )}
           </div>
-          <Pagination page={page} totalPages={response?.pagination?.totalPages ?? page} disabled={loading} onPageChange={setPage} />
+          <Pagination page={page} totalPages={response?.pagination?.totalPages ?? page} disabled={loading} onPageChange={nextPage => window.history.pushState(null, "", leaderboardHref(`/leaderboards/rewards/${encodeURIComponent(rewardId)}`, timeRange, "", nextPage))} />
         </>
       )}
     </div>

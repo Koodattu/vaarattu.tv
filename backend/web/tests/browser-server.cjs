@@ -1,7 +1,7 @@
 // Runs the real API against synthetic data only. Never loads a .env file.
 const assert = require("node:assert/strict");
 const path = require("node:path");
-assert.equal(process.env.VOD_TEST_DATABASE_URL, "postgresql://postgres@127.0.0.1:55489/postgres");
+assert.equal(process.env.VOD_TEST_DATABASE_URL, "postgresql://postgres@127.0.0.1:35489/postgres");
 process.env.DATABASE_URL = process.env.VOD_TEST_DATABASE_URL;
 require("ts-node").register({ project: path.join(__dirname, "../tsconfig.json") });
 const express = require("express");

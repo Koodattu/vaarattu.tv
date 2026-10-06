@@ -9,7 +9,7 @@ export default defineConfig({
     {
       command: "node ../backend/web/tests/browser-server.cjs",
       url: "http://127.0.0.1:33101/health",
-      env: { VOD_TEST_DATABASE_URL: "postgresql://postgres@127.0.0.1:55489/postgres" },
+      env: { VOD_TEST_DATABASE_URL: "postgresql://postgres@127.0.0.1:35489/postgres" },
       reuseExistingServer: process.env.PLAYWRIGHT_REUSE_SERVER === "1",
     },
     {

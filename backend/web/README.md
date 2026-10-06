@@ -33,8 +33,13 @@ The server will start on port 3001 (configurable via `WEB_API_PORT` environment 
 - `GET /api/leaderboards/emotes` - Top emotes by usage count
 - `GET /api/leaderboards/users` - Top users by messages/watchtime/points
   - Query: `sortBy=messages|watchtime|points` (default: messages)
+  - Optional `search` matches login/display name and preserves the full-population `rank`.
+- `GET /api/leaderboards/gifts` and `/api/leaderboards/cheers` support the same viewer search and ranks.
 - `GET /api/leaderboards/rewards` - Top channel point rewards by redemptions
 - `GET /api/leaderboards/games` - Top games by total watch time
+
+See [community rankings](../../docs/community-rankings.md) for URL state, period
+definitions, tie ordering and the limitations of watchtime/points data.
 
 ### Users
 

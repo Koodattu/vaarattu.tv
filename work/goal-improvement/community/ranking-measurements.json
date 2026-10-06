@@ -1,0 +1,42 @@
+{
+  "baseline": "07c708b18f202fb2098422ae52db092fe1f8d70e",
+  "environment": "Windows Node24, localhost PostgreSQL17.10 (1 CPU / 384 MiB); inserted pages already warm; not production latency",
+  "syntheticViewers": 100,
+  "syntheticRedemptions": 14950,
+  "pageSize": 25,
+  "samplesMs": {
+    "before": [
+      110.24490000000014,
+      112.49090000000024,
+      105.85120000000006,
+      117.68499999999995,
+      119.9082000000003,
+      114.41610000000037,
+      107.53420000000006
+    ],
+    "after": [
+      27.23739999999998,
+      27.365200000000186,
+      21.791799999999967,
+      29.384500000000116,
+      27.802200000000084,
+      27.931400000000394,
+      26.23949999999968
+    ],
+    "lookup": [
+      23.44290000000001,
+      24.181099999999788,
+      24.471900000000005,
+      29.03570000000036,
+      26.02689999999984,
+      21.229299999999967,
+      24.877300000000105
+    ]
+  },
+  "medianAfterFirstSampleMs": {
+    "before": 113.4535000000003,
+    "after": 27.583700000000135,
+    "lookup": 24.674600000000055
+  },
+  "verified": "Both versions return independently calculated top25 scores; lookup returns global rank100; transaction rolled back."
+}

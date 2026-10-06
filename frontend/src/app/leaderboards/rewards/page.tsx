@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, Suspense } from "react";
+import { useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -8,13 +8,8 @@ import { TimeRange } from "@/types/api";
 import { apiClient } from "@/lib/api";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { Pagination } from "@/components/Pagination";
-
-const TIME_RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
-  { value: "all", label: "All Time" },
-  { value: "year", label: "Past Year" },
-  { value: "month", label: "Past Month" },
-  { value: "week", label: "Past Week" },
-];
+import { LeaderboardCategories, LeaderboardPeriod } from "@/components/leaderboards/LeaderboardControls";
+import { leaderboardHref, parseLeaderboardPage, parseTimeRange } from "@/lib/leaderboards";
 
 function getRankBadge(rank: number): string {
   if (rank === 1) return "🥇";
@@ -29,27 +24,25 @@ function formatNumber(num: number): string {
 
 function RewardsLeaderboardContent() {
   const searchParams = useSearchParams();
-  const initialTimeRange = (searchParams.get("timeRange") as TimeRange) || "all";
-
-  const [timeRange, setTimeRange] = useState<TimeRange>(initialTimeRange);
-  const [page, setPage] = useState(1);
+  const timeRange = parseTimeRange(searchParams.get("timeRange"));
+  const page = parseLeaderboardPage(searchParams.get("page"));
   const pageSize = 25;
   const { response, loading, retry } = useApiQuery(useCallback((signal: AbortSignal) => apiClient.getTopRewards(timeRange, page, pageSize, signal), [timeRange, page]));
   const rewards = response?.data ?? [];
   const error = response?.error;
 
   const handleTimeRangeChange = (newRange: TimeRange) => {
-    setTimeRange(newRange);
-    setPage(1);
+    window.history.pushState(null, "", leaderboardHref("/leaderboards/rewards", newRange));
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Back link */}
-      <Link href="/leaderboards" className="text-purple-400 hover:text-purple-300 transition-colors mb-6 inline-block">
+      <Link href={leaderboardHref("/leaderboards", timeRange)} className="text-purple-400 hover:text-purple-300 transition-colors mb-6 inline-block">
         ← Back to Leaderboards
       </Link>
 
+      <LeaderboardCategories current="rewards" timeRange={timeRange} />
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div>
@@ -59,21 +52,7 @@ function RewardsLeaderboardContent() {
           <p className="text-gray-400">Most redeemed channel point rewards</p>
         </div>
 
-        {/* Time Range Selector */}
-        <div className="flex flex-wrap gap-2">
-          {TIME_RANGE_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              aria-pressed={timeRange === option.value}
-              onClick={() => handleTimeRangeChange(option.value)}
-              className={`min-h-11 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                timeRange === option.value ? "bg-purple-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
+        <LeaderboardPeriod value={timeRange} onChange={handleTimeRangeChange} />
       </div>
 
       {loading && (
@@ -107,21 +86,19 @@ function RewardsLeaderboardContent() {
                     <Link
                       key={reward.id}
                       href={`/leaderboards/rewards/${reward.id}?timeRange=${timeRange}`}
-                      className="flex items-center gap-4 p-4 hover:bg-gray-700/50 transition-colors"
+                      className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 p-4 hover:bg-gray-700/50 transition-colors sm:flex"
                     >
-                      <span className="w-12 text-center text-xl font-bold">{getRankBadge(rank)}</span>
-                      <div className="w-12 h-12 flex items-center justify-center">
-                        {reward.imageUrl && <Image src={reward.imageUrl} alt={reward.title} width={40} height={40} className="rounded" />}
-                      </div>
+                      <span className="w-8 shrink-0 text-center text-xl font-bold">{getRankBadge(rank)}</span>
+                      {reward.imageUrl && <Image src={reward.imageUrl} alt="" width={40} height={40} className="hidden shrink-0 rounded sm:block" />}
                       <div className="flex-1 min-w-0">
-                        <div className="text-white font-medium text-lg">{reward.title}</div>
+                        <div className="text-white font-medium text-lg [overflow-wrap:anywhere]">{reward.title}</div>
                         <div className="text-gray-500 text-sm">{reward.cost.toLocaleString()} points</div>
                       </div>
-                      <div className="text-right">
+                      <div className="col-start-2 [overflow-wrap:anywhere] sm:text-right">
                         <div className="text-white font-bold text-xl">{formatNumber(reward.totalRedemptions)}</div>
                         <div className="text-gray-500 text-sm">redemptions</div>
                       </div>
-                      <div className="text-gray-500">→</div>
+                      <div aria-hidden="true" className="hidden text-gray-400 sm:block">→</div>
                     </Link>
                   );
                 })}
@@ -129,7 +106,7 @@ function RewardsLeaderboardContent() {
             )}
           </div>
 
-          <Pagination page={page} totalPages={response?.pagination?.totalPages ?? page} disabled={loading} onPageChange={setPage} />
+          <Pagination page={page} totalPages={response?.pagination?.totalPages ?? page} disabled={loading} onPageChange={nextPage => window.history.pushState(null, "", leaderboardHref("/leaderboards/rewards", timeRange, "", nextPage))} />
         </>
       )}
     </div>

@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { Suspense, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { apiClient } from "@/lib/api";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { Pagination } from "@/components/Pagination";
+import { LeaderboardCategories } from "@/components/leaderboards/LeaderboardControls";
+import { leaderboardHref, parseLeaderboardPage, parseTimeRange } from "@/lib/leaderboards";
 
 const PLATFORMS = [
   { value: undefined, label: "All Platforms" },
@@ -16,8 +19,22 @@ const PLATFORMS = [
 ];
 
 export default function EmotesLeaderboardPage() {
-  const [platform, setPlatform] = useState<string>();
-  const [page, setPage] = useState(1);
+  return <Suspense fallback={<p role="status" className="p-8 text-gray-300">Loading emotes…</p>}><EmotesLeaderboardContent /></Suspense>;
+}
+
+function EmotesLeaderboardContent() {
+  const params = useSearchParams();
+  const platform = PLATFORMS.find(option => option.value === params.get("platform"))?.value;
+  const page = parseLeaderboardPage(params.get("page"));
+  // Carry the originating period back to other categories; emotes remain all-time.
+  const timeRange = parseTimeRange(params.get("timeRange"));
+  const navigate = (nextPlatform: string | undefined, nextPage = 1) => {
+    const query = new URLSearchParams();
+    if (timeRange !== "all") query.set("timeRange", timeRange);
+    if (nextPlatform) query.set("platform", nextPlatform);
+    if (nextPage > 1) query.set("page", String(nextPage));
+    window.history.pushState(null, "", `/leaderboards/emotes${query.size ? `?${query}` : ""}`);
+  };
   const pageSize = 25;
   const { response, loading, retry } = useApiQuery(useCallback((signal: AbortSignal) => apiClient.getTopEmotes(platform, "all", page, pageSize, signal), [platform, page]));
   const emotes = response?.data ?? [];
@@ -25,13 +42,14 @@ export default function EmotesLeaderboardPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <Link href="/leaderboards" className="inline-flex min-h-11 items-center text-purple-400 hover:text-purple-300 mb-4">← Back to Leaderboards</Link>
+      <Link href={leaderboardHref("/leaderboards", timeRange)} className="inline-flex min-h-11 items-center text-purple-400 hover:text-purple-300 mb-4">← Back to Leaderboards</Link>
+      <LeaderboardCategories current="emotes" timeRange={timeRange} />
       <h1 className="text-3xl font-bold text-white mb-2">Popular Emotes</h1>
       <p className="text-gray-400 mb-6">All-time usage across chat. Choose a platform to explore its emotes.</p>
       <div role="group" aria-label="Emote platform" className="flex gap-2 mb-6 flex-wrap">
         {PLATFORMS.map(option => (
           <button key={option.value || "all"} type="button" aria-pressed={platform === option.value}
-            onClick={() => { setPlatform(option.value); setPage(1); }}
+            onClick={() => navigate(option.value)}
             className={`min-h-11 px-4 py-2 rounded-md text-sm font-medium ${platform === option.value ? "bg-purple-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`}>
             {option.label}
           </button>
@@ -68,7 +86,7 @@ export default function EmotesLeaderboardPage() {
           })}
         </ol>
       )}
-      <Pagination page={page} totalPages={response?.pagination?.totalPages ?? page} disabled={loading} onPageChange={setPage} />
+      <Pagination page={page} totalPages={response?.pagination?.totalPages ?? page} disabled={loading} onPageChange={nextPage => navigate(platform, nextPage)} />
     </div>
   );
 }

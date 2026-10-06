@@ -145,6 +145,7 @@ export interface StreamTimeline {
 export type TimeRange = "all" | "year" | "month" | "week";
 
 export interface LeaderboardUser {
+  rank: number;
   id: number;
   twitchId: string;
   login: string;
@@ -175,6 +176,7 @@ export interface LeaderboardReward {
 }
 
 export interface LeaderboardSubscriptionGift {
+  rank: number;
   id: number;
   twitchId: string;
   login: string;
@@ -185,6 +187,7 @@ export interface LeaderboardSubscriptionGift {
 }
 
 export interface LeaderboardCheer {
+  rank: number;
   id: number;
   twitchId: string;
   login: string;

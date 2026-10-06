@@ -7,14 +7,15 @@ import Image from "next/image";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { apiClient } from "@/lib/api";
 import { formatDuration, formatRelativeTime, formatDate } from "@/lib/utils";
+import { leaderboardHref } from "@/lib/leaderboards";
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   if (!value) return null;
   return (
-    <tr className="border-b border-gray-700">
-      <th className="text-left text-gray-400 py-2 pr-4 font-medium text-sm whitespace-nowrap">{label}</th>
-      <td className="text-white py-2">{value}</td>
-    </tr>
+    <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-gray-700 py-2">
+      <dt className="min-w-0 flex-[1_1_8rem] font-medium text-gray-400 [overflow-wrap:anywhere]">{label}</dt>
+      <dd className="min-w-0 flex-[1_1_6rem] text-white [overflow-wrap:anywhere]">{value}</dd>
+    </div>
   );
 }
 
@@ -88,14 +89,14 @@ export default function ProfilePage() {
         <div className="min-w-0 flex-1 order-1">
           {/* Mobile: Show header here */}
           <div className="lg:hidden mb-6">
-            <div className="flex items-center gap-4 mb-4">
+            <div className="flex flex-wrap items-center gap-4 mb-4">
               {profile.avatar ? (
-                <Image src={profile.avatar} alt={profile.displayName} width={80} height={80} className="rounded-full" />
+                <Image src={profile.avatar} alt={profile.displayName} width={80} height={80} className="shrink-0 rounded-full" />
               ) : (
-                <div className="w-20 h-20 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 text-3xl">👤</div>
+                <div className="w-20 h-20 shrink-0 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 text-3xl">👤</div>
               )}
-              <div>
-                <h1 className="text-2xl font-bold text-white">{profile.displayName}</h1>
+              <div className="min-w-0 flex-1 basis-48">
+                <h1 className="text-2xl font-bold text-white [overflow-wrap:anywhere]">{profile.displayName}</h1>
                 {roles.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {roles.map((role) => (
@@ -110,16 +111,16 @@ export default function ProfilePage() {
           </div>
 
           {/* Title for desktop */}
-          <h1 className="hidden lg:block text-3xl font-bold text-white mb-6">{profile.displayName}</h1>
+          <h1 className="hidden lg:block text-3xl font-bold text-white mb-6 [overflow-wrap:anywhere]">{profile.displayName}</h1>
 
           {/* AI Summary */}
-          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-6">
+          <div className="bg-gray-800 rounded-lg p-4 sm:p-6 border border-gray-700 mb-6">
             <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <span>📝</span> About
             </h2>
             {profile.aiSummary ? (
               <div className="prose prose-invert max-w-none">
-                <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{profile.aiSummary}</p>
+                <p className="text-gray-300 leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere]">{profile.aiSummary}</p>
                 {profile.aiSummaryLastUpdate && <p className="text-gray-400 text-xs mt-4">Last updated {formatRelativeTime(profile.aiSummaryLastUpdate)}</p>}
               </div>
             ) : (
@@ -188,7 +189,7 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* Right column - Info Table (Wikipedia style) */}
+        {/* Right column - Profile facts */}
         <div className="w-full lg:w-80 lg:shrink-0 order-2">
           <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden lg:sticky lg:top-24">
             {/* Desktop header image */}
@@ -198,7 +199,7 @@ export default function ProfilePage() {
               ) : (
                 <div className="w-28 h-28 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 text-4xl mx-auto mb-3 border-4 border-gray-600">👤</div>
               )}
-              <h2 className="text-xl font-bold text-white">{profile.displayName}</h2>
+              <h2 className="text-xl font-bold text-white [overflow-wrap:anywhere]">{profile.displayName}</h2>
               {roles.length > 0 && (
                 <div className="flex flex-wrap justify-center gap-2 mt-2">
                   {roles.map((role) => (
@@ -210,10 +211,9 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {/* Info table */}
+            {/* Profile facts wrap into label/value pairs when space is limited. */}
             <div className="p-4">
-              <table className="w-full text-sm">
-                <tbody>
+              <dl className="text-sm">
                   <InfoRow label="Total Messages" value={profile.totalMessages.toLocaleString()} />
                   <InfoRow label="Watch Time" value={formatDuration(profile.totalWatchTime)} />
                   <InfoRow label="Avg Session" value={profile.averageSessionTime > 0 ? formatDuration(profile.averageSessionTime) : null} />
@@ -257,12 +257,17 @@ export default function ProfilePage() {
                       }
                     />
                   )}
-                </tbody>
-              </table>
+              </dl>
             </div>
 
             {/* Action buttons */}
             <div className="p-4 pt-0 space-y-2">
+              <Link
+                href={leaderboardHref("/leaderboards/messages", "all", profile.login)}
+                className="flex min-h-11 w-full items-center justify-center text-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md text-sm font-medium transition-colors"
+              >
+                View Rankings
+              </Link>
               <a
                 href={`https://twitch.tv/${profile.login}`}
                 target="_blank"

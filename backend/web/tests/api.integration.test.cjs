@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const { test } = require("node:test");
 
 test("public API validates requests and serves viewers before analytics are generated", { skip: !process.env.VOD_TEST_DATABASE_URL }, async t => {
-  assert.equal(process.env.VOD_TEST_DATABASE_URL, "postgresql://postgres@127.0.0.1:55489/postgres");
+  assert.equal(process.env.VOD_TEST_DATABASE_URL, "postgresql://postgres@127.0.0.1:35489/postgres");
   process.env.DATABASE_URL = process.env.VOD_TEST_DATABASE_URL;
   const prisma = require("../src/prismaClient").default;
   const app = require("express")();
@@ -18,6 +18,8 @@ test("public API validates requests and serves viewers before analytics are gene
     "/users?page=2147483647&limit=100", "/users?search=one&search=two", "/users/1x", "/users/2147483648/sessions",
     "/streams/1x", "/streams/0/timeline", "/leaderboards/users?sortBy=invalid", "/leaderboards/users?timeRange=invalid",
     "/leaderboards/emotes?platform=twitch&platform=bttv", "/leaderboards/rewards/1x",
+    "/leaderboards/users?search=a&search=b", "/leaderboards/gifts?search=a&search=b", "/leaderboards/cheers?search=a&search=b",
+    `/leaderboards/users?search=${"a".repeat(301)}`,
     "/mod/users/1/messages?streamId=invalid", "/mod/users/1/messages?search=a&search=b", "/mod/messages/search?search=%20%20",
     "/mod/messages/search?search=hello&streamId=invalid", "/mod/messages/search?search=hello&streamId=1x",
   ]) await t.test(`rejects ${suffix}`, async () => {

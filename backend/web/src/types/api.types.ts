@@ -40,6 +40,7 @@ export interface LeaderboardEmote {
 }
 
 export interface LeaderboardUser {
+  rank: number;
   id: number;
   twitchId: string;
   login: string;
@@ -62,6 +63,7 @@ export interface LeaderboardReward {
 }
 
 export interface LeaderboardSubscriptionGift {
+  rank: number;
   id: number;
   twitchId: string;
   login: string;
@@ -72,6 +74,7 @@ export interface LeaderboardSubscriptionGift {
 }
 
 export interface LeaderboardCheer {
+  rank: number;
   id: number;
   twitchId: string;
   login: string;

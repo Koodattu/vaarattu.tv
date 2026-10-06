@@ -1,5 +1,5 @@
 import prisma from "../prismaClient";
-import { Prisma } from "@vaarattu/shared";
+import { getViewerRankings } from "./viewerRankings";
 import {
   LeaderboardCheer,
   LeaderboardEmote,
@@ -12,23 +12,8 @@ import {
 } from "../types/api.types";
 import { calculateOffset } from "../utils/pagination";
 
-export type TimeRange = "all" | "year" | "month" | "week";
-
-function getDateFromRange(range: TimeRange): Date | null {
-  if (range === "all") return null;
-
-  const now = new Date();
-  switch (range) {
-    case "year":
-      return new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-    case "month":
-      return new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-    case "week":
-      return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    default:
-      return null;
-  }
-}
+import { getDateFromRange, TimeRange } from "../utils/leaderboardRange";
+export type { TimeRange } from "../utils/leaderboardRange";
 
 export class LeaderboardService {
   // Get summary with top 3 of each category for main leaderboards page
@@ -81,253 +66,19 @@ export class LeaderboardService {
     page: number,
     limit: number,
     sortBy: "messages" | "watchtime" | "points" = "messages",
-    timeRange: TimeRange = "all"
+    timeRange: TimeRange = "all",
+    search?: string
   ): Promise<{ users: LeaderboardUser[]; total: number }> {
-    const startDate = getDateFromRange(timeRange);
-
-    // For "all" time range, use pre-calculated ViewerProfile data
-    if (!startDate) {
-      return this.getTopUsersFromProfile(page, limit, sortBy);
-    }
-
-    // For specific time ranges, calculate from source data
-    return this.getTopUsersCalculated(page, limit, sortBy, startDate);
-  }
-
-  private async getTopUsersFromProfile(page: number, limit: number, sortBy: "messages" | "watchtime" | "points"): Promise<{ users: LeaderboardUser[]; total: number }> {
-    const offset = calculateOffset(page, limit);
-
-    let orderBy: Prisma.UserOrderByWithRelationInput;
-    switch (sortBy) {
-      case "watchtime":
-        orderBy = { viewerProfile: { totalWatchTime: "desc" } };
-        break;
-      case "points":
-        orderBy = { viewerProfile: { totalPointsSpent: "desc" } };
-        break;
-      default:
-        orderBy = { viewerProfile: { totalMessages: "desc" } };
-    }
-
-    const [users, total] = await Promise.all([
-      prisma.user.findMany({
-        select: {
-          id: true,
-          twitchId: true,
-          login: true,
-          displayName: true,
-          avatar: true,
-          viewerProfile: {
-            select: {
-              totalMessages: true,
-              totalWatchTime: true,
-              totalPointsSpent: true,
-              totalRedemptions: true,
-            },
-          },
-        },
-        where: {
-          viewerProfile: {
-            isNot: null,
-          },
-        },
-        orderBy: [orderBy, { id: "asc" }],
-        skip: offset,
-        take: limit,
-      }),
-      prisma.user.count({
-        where: {
-          viewerProfile: {
-            isNot: null,
-          },
-        },
-      }),
-    ]);
-
-    const formattedUsers: LeaderboardUser[] = users.map((user) => ({
-      id: user.id,
-      twitchId: user.twitchId,
-      login: user.login,
-      displayName: user.displayName,
-      avatar: user.avatar,
-      totalMessages: user.viewerProfile?.totalMessages || 0,
-      totalWatchTime: user.viewerProfile?.totalWatchTime || 0,
-      totalPointsSpent: user.viewerProfile?.totalPointsSpent || 0,
-      totalRedemptions: user.viewerProfile?.totalRedemptions || 0,
-    }));
-
-    return { users: formattedUsers, total };
-  }
-
-  private async getTopUsersCalculated(
-    page: number,
-    limit: number,
-    sortBy: "messages" | "watchtime" | "points",
-    startDate: Date
-  ): Promise<{ users: LeaderboardUser[]; total: number }> {
-    // Calculate stats from source tables for time-range filtering
-
-    if (sortBy === "messages") {
-      const messageCounts = await prisma.message.groupBy({
-        by: ["userId"],
-        where: {
-          timestamp: { gte: startDate },
-        },
-        _count: { id: true },
-        orderBy: [{ _count: { id: "desc" } }, { userId: "asc" }],
-        skip: calculateOffset(page, limit),
-        take: limit,
-      });
-
-      const total = await prisma.message.groupBy({
-        by: ["userId"],
-        where: { timestamp: { gte: startDate } },
-      });
-
-      const userIds = messageCounts.map((m) => m.userId);
-      const users = await prisma.user.findMany({
-        where: { id: { in: userIds } },
-        select: {
-          id: true,
-          twitchId: true,
-          login: true,
-          displayName: true,
-          avatar: true,
-        },
-      });
-
-      const userMap = new Map(users.map((u) => [u.id, u]));
-
-      return {
-        users: messageCounts.map((m) => {
-          const user = userMap.get(m.userId)!;
-          return {
-            id: user.id,
-            twitchId: user.twitchId,
-            login: user.login,
-            displayName: user.displayName,
-            avatar: user.avatar,
-            totalMessages: m._count.id,
-            totalWatchTime: 0,
-            totalPointsSpent: 0,
-            totalRedemptions: 0,
-          };
-        }),
-        total: total.length,
-      };
-    }
-
-    if (sortBy === "watchtime") {
-      const endDate = new Date();
-      // UTC text avoids session-timezone shifts for Prisma's timestamp columns.
-      const completedSessions = Prisma.sql`
-        FROM "ViewSession"
-        WHERE "sessionStart" < ${endDate.toISOString()}::timestamp
-          AND "sessionEnd" > ${startDate.toISOString()}::timestamp
-          AND "sessionEnd" > "sessionStart"
-      `;
-      const [ranking, totals] = await Promise.all([
-        prisma.$queryRaw<Array<{ userId: number; watchtime: number }>>`
-          SELECT "userId", (SUM(EXTRACT(EPOCH FROM (
-            LEAST("sessionEnd", ${endDate.toISOString()}::timestamp) -
-            GREATEST("sessionStart", ${startDate.toISOString()}::timestamp)
-          ))) / 60)::double precision AS watchtime
-          ${completedSessions}
-          GROUP BY "userId"
-          ORDER BY watchtime DESC, "userId" ASC
-          LIMIT ${limit} OFFSET ${calculateOffset(page, limit)}
-        `,
-        prisma.$queryRaw<Array<{ total: number }>>`SELECT COUNT(DISTINCT "userId")::int AS total ${completedSessions}`,
-      ]);
-      const sorted = ranking.map(({ userId, watchtime }) => [userId, watchtime] as const);
-      const userIds = sorted.map(([userId]) => userId);
-      const users = await prisma.user.findMany({
-        where: { id: { in: userIds } },
-        select: {
-          id: true,
-          twitchId: true,
-          login: true,
-          displayName: true,
-          avatar: true,
-        },
-      });
-
-      const userMap = new Map(users.map((u) => [u.id, u]));
-
-      return {
-        users: sorted.map(([userId, watchtime]) => {
-          const user = userMap.get(userId)!;
-          return {
-            id: user.id,
-            twitchId: user.twitchId,
-            login: user.login,
-            displayName: user.displayName,
-            avatar: user.avatar,
-            totalMessages: 0,
-            totalWatchTime: Math.round(watchtime),
-            totalPointsSpent: 0,
-            totalRedemptions: 0,
-          };
-        }),
-        total: totals[0].total,
-      };
-    }
-
-    // sortBy === "points"
-    const redemptions = await prisma.redemption.findMany({
-      where: {
-        timestamp: { gte: startDate },
-      },
-      select: {
-        userId: true,
-        channelReward: {
-          select: { cost: true },
-        },
-      },
-    });
-
-    const pointsMap = new Map<number, { points: number; count: number }>();
-    redemptions.forEach((r) => {
-      const current = pointsMap.get(r.userId) || { points: 0, count: 0 };
-      current.points += r.channelReward.cost;
-      current.count += 1;
-      pointsMap.set(r.userId, current);
-    });
-
-    const sorted = Array.from(pointsMap.entries())
-      .sort((a, b) => b[1].points - a[1].points)
-      .slice(calculateOffset(page, limit), calculateOffset(page, limit) + limit);
-
-    const userIds = sorted.map(([userId]) => userId);
-    const users = await prisma.user.findMany({
-      where: { id: { in: userIds } },
-      select: {
-        id: true,
-        twitchId: true,
-        login: true,
-        displayName: true,
-        avatar: true,
-      },
-    });
-
-    const userMap = new Map(users.map((u) => [u.id, u]));
-
+    const { rows, total } = await getViewerRankings(sortBy, getDateFromRange(timeRange), page, limit, search);
     return {
-      users: sorted.map(([userId, { points, count }]) => {
-        const user = userMap.get(userId)!;
-        return {
-          id: user.id,
-          twitchId: user.twitchId,
-          login: user.login,
-          displayName: user.displayName,
-          avatar: user.avatar,
-          totalMessages: 0,
-          totalWatchTime: 0,
-          totalPointsSpent: points,
-          totalRedemptions: count,
-        };
-      }),
-      total: pointsMap.size,
+      users: rows.map(row => ({
+        id: row.id, twitchId: row.twitchId, login: row.login, displayName: row.displayName, avatar: row.avatar, rank: row.rank,
+        totalMessages: timeRange === "all" ? row.totalMessages : sortBy === "messages" ? row.score : 0,
+        totalWatchTime: timeRange === "all" ? row.totalWatchTime : sortBy === "watchtime" ? Math.round(row.score) : 0,
+        totalPointsSpent: timeRange === "all" ? row.totalPointsSpent : sortBy === "points" ? row.score : 0,
+        totalRedemptions: timeRange === "all" ? row.totalRedemptions : sortBy === "points" ? row.events : 0,
+      })),
+      total,
     };
   }
 
@@ -370,127 +121,25 @@ export class LeaderboardService {
     return { rewards: paginated, total };
   }
 
-  async getTopSubscriptionGifters(
-    page: number,
-    limit: number,
-    timeRange: TimeRange = "all"
-  ): Promise<{ gifters: LeaderboardSubscriptionGift[]; total: number }> {
-    const startDate = getDateFromRange(timeRange);
-    const whereClause: any = {
-      userId: { not: null },
-    };
-    if (startDate) {
-      whereClause.timestamp = { gte: startDate };
-    }
-
-    const giftCounts = await prisma.subscriptionGift.groupBy({
-      by: ["userId"],
-      where: whereClause,
-      _sum: { amount: true },
-      _count: { id: true },
-      orderBy: [{ _sum: { amount: "desc" } }, { userId: "asc" }],
-      skip: calculateOffset(page, limit),
-      take: limit,
-    });
-
-    const totalUsers = await prisma.subscriptionGift.groupBy({
-      by: ["userId"],
-      where: whereClause,
-    });
-
-    const userIds = giftCounts.map((gift) => gift.userId).filter((userId): userId is number => userId !== null);
-    const users = await prisma.user.findMany({
-      where: { id: { in: userIds } },
-      select: {
-        id: true,
-        twitchId: true,
-        login: true,
-        displayName: true,
-        avatar: true,
-      },
-    });
-
-    const userMap = new Map(users.map((user) => [user.id, user]));
-
+  async getTopSubscriptionGifters(page: number, limit: number, timeRange: TimeRange = "all", search?: string): Promise<{ gifters: LeaderboardSubscriptionGift[]; total: number }> {
+    const { rows, total } = await getViewerRankings("gifts", getDateFromRange(timeRange), page, limit, search);
     return {
-      gifters: giftCounts
-        .map((gift) => {
-          if (gift.userId === null) return null;
-          const user = userMap.get(gift.userId);
-          if (!user) return null;
-
-          return {
-            id: user.id,
-            twitchId: user.twitchId,
-            login: user.login,
-            displayName: user.displayName,
-            avatar: user.avatar,
-            totalGiftedSubs: gift._sum.amount || 0,
-            giftEvents: gift._count.id,
-          };
-        })
-        .filter((gift): gift is LeaderboardSubscriptionGift => gift !== null),
-      total: totalUsers.length,
+      gifters: rows.map(row => ({
+        id: row.id, twitchId: row.twitchId, login: row.login, displayName: row.displayName, avatar: row.avatar, rank: row.rank,
+        totalGiftedSubs: row.score, giftEvents: row.events,
+      })),
+      total,
     };
   }
 
-  async getTopCheers(page: number, limit: number, timeRange: TimeRange = "all"): Promise<{ cheers: LeaderboardCheer[]; total: number }> {
-    const startDate = getDateFromRange(timeRange);
-    const whereClause: any = {
-      userId: { not: null },
-    };
-    if (startDate) {
-      whereClause.timestamp = { gte: startDate };
-    }
-
-    const cheerCounts = await prisma.cheer.groupBy({
-      by: ["userId"],
-      where: whereClause,
-      _sum: { bits: true },
-      _count: { id: true },
-      orderBy: [{ _sum: { bits: "desc" } }, { userId: "asc" }],
-      skip: calculateOffset(page, limit),
-      take: limit,
-    });
-
-    const totalUsers = await prisma.cheer.groupBy({
-      by: ["userId"],
-      where: whereClause,
-    });
-
-    const userIds = cheerCounts.map((cheer) => cheer.userId).filter((userId): userId is number => userId !== null);
-    const users = await prisma.user.findMany({
-      where: { id: { in: userIds } },
-      select: {
-        id: true,
-        twitchId: true,
-        login: true,
-        displayName: true,
-        avatar: true,
-      },
-    });
-
-    const userMap = new Map(users.map((user) => [user.id, user]));
-
+  async getTopCheers(page: number, limit: number, timeRange: TimeRange = "all", search?: string): Promise<{ cheers: LeaderboardCheer[]; total: number }> {
+    const { rows, total } = await getViewerRankings("cheers", getDateFromRange(timeRange), page, limit, search);
     return {
-      cheers: cheerCounts
-        .map((cheer) => {
-          if (cheer.userId === null) return null;
-          const user = userMap.get(cheer.userId);
-          if (!user) return null;
-
-          return {
-            id: user.id,
-            twitchId: user.twitchId,
-            login: user.login,
-            displayName: user.displayName,
-            avatar: user.avatar,
-            totalBits: cheer._sum.bits || 0,
-            cheerCount: cheer._count.id,
-          };
-        })
-        .filter((cheer): cheer is LeaderboardCheer => cheer !== null),
-      total: totalUsers.length,
+      cheers: rows.map(row => ({
+        id: row.id, twitchId: row.twitchId, login: row.login, displayName: row.displayName, avatar: row.avatar, rank: row.rank,
+        totalBits: row.score, cheerCount: row.events,
+      })),
+      total,
     };
   }
 
