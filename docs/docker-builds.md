@@ -46,6 +46,18 @@ Sustained swap activity (`si`/`so` in `vmstat`), high I/O wait (`wa`), or a full
 
 ## Dependency maintenance
 
+### Security update: 2026-10-23
+
+Both Dockerfiles now pin Node 24.22.1 / Alpine 3.24 at the verified multi-architecture digest, including ARM64. This takes the October 21 Node security release without changing the Node major or Alpine release line. Next.js and its ESLint config move together to 16.4.2. The lockfiles also update Sharp to 0.35.5, source-map-js to 1.2.2, proxy-addr to 2.0.8, follow-redirects to 1.16.1, and compatible brace-expansion fixes.
+
+Remaining audit findings are in development/build tooling: the braces dependency chains used by Next's ESLint config and backend nodemon, and the previously documented Prisma CLI/deepmerge-ts chain. Do not apply npm's suggested major downgrades or force an unverified Prisma migration. Production backend images continue to prune development tooling; the migration image retains Prisma tooling.
+
+Local validation passed frontend lint, type checking and production build, shared and backend TypeScript builds, all 46 Twitch tests, and 20 web tests. Seven database integration tests were skipped because local Docker was unavailable; browser/database journeys were not run. Build all four ARM64 Compose images before rollout, then verify the running Node/package versions, API/frontend responses, and collector startup. Host Docker/containerd/runc and the separately managed PostgreSQL container require separate maintenance; this application update does not upgrade them.
+
+References: [Node October security release](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases), [Next.js security advisories](https://github.com/vercel/next.js/security/advisories).
+
+### Previous update: 2026-09-12
+
 The 2026-09-12 update pins the official Node 24.21.0 LTS / Alpine 3.24 multi-architecture image by digest. Node 24 remains the production LTS choice. Update the version and digest together in both Dockerfiles when taking future security releases. Alpine's existing small footprint is retained; the backend explicitly installs OpenSSL for Prisma. The unused frontend `libc6-compat` install was removed.
 
 Updated Next.js and its ESLint config to 16.3.5, React to 19.3.0, Tailwind to 4.3.3, Twurple to 8.1.4, Prisma/client together to 6.19.3, and the OpenAI SDK within v6 to 6.49.0. Other compatible tooling and transitive fixes are recorded in the four lockfiles. `@types/dotenv` and the direct ESLint compatibility adapter were removed. Twurple's directly imported `eventsub-base` is now declared explicitly; unused direct declarations for `api-call` and `common` were removed (Twurple still installs them transitively).
