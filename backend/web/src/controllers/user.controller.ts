@@ -52,7 +52,7 @@ export class UserController {
   async getUserProfileByLogin(req: Request, res: Response<ApiResponse>) {
     const login = req.params.login;
 
-    if (!login) {
+    if (typeof login !== "string" || !login) {
       return res.status(400).json({
         success: false,
         error: "Login required",

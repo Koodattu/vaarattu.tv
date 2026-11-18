@@ -82,10 +82,10 @@ export async function syncClips() {
   const rows = [...clips.values()].map(clip => {
     let thumbnailUrl: string | null = null;
     try { const url = new URL(clip.thumbnailUrl); if (url.protocol === "https:") thumbnailUrl = url.href; } catch { /* Missing preview is allowed. */ }
-    // Prisma Date parameters are timestamptz; these schema columns store naive UTC.
+    // Bind ISO instants with an explicit UTC offset, independent of the session timezone.
     return Prisma.sql`(${clip.id}, ${broadcasterId}, ${clip.title}, ${clip.creatorDisplayName},
-      ${clip.gameId || null}, ${games.get(clip.gameId) ?? null}, ${thumbnailUrl}, (${clip.creationDate}::timestamptz AT TIME ZONE 'UTC'),
-      ${clip.duration}, ${clip.views}, ${clip.isFeatured}, ${clip.videoId || null}, ${clip.vodOffset}, true, (${checkedAt}::timestamptz AT TIME ZONE 'UTC'))`;
+      ${clip.gameId || null}, ${games.get(clip.gameId) ?? null}, ${thumbnailUrl}, (${clip.creationDate.toISOString()}::timestamptz AT TIME ZONE 'UTC'),
+      ${clip.duration}, ${clip.views}, ${clip.isFeatured}, ${clip.videoId || null}, ${clip.vodOffset}, true, (${checkedAt.toISOString()}::timestamptz AT TIME ZONE 'UTC'))`;
   });
   const writes: Prisma.PrismaPromise<unknown>[] = [];
   for (let i = 0; i < rows.length; i += 100) {

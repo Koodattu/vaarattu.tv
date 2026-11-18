@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "nodemon --watch src --exec ts-node src/index.ts",
+    "dev": "node --watch --require ts-node/register src/index.ts",
     "db:generate": "cd ../shared && npm run db:generate",
     "db:push": "cd ../shared && npm run db:push",
     "db:migrate": "cd ../shared && npm run db:migrate",
@@ -20,22 +20,21 @@
   "dependencies": {
     "@mkody/twitch-emoticons": "^2.9.9",
     "@vaarattu/shared": "file:../shared",
-    "@twurple/api": "^8.1.4",
-    "@twurple/auth": "^8.1.4",
-    "@twurple/chat": "^8.1.4",
-    "@twurple/eventsub-base": "^8.1.4",
-    "@twurple/eventsub-ws": "^8.1.4",
+    "@twurple/api": "^8.2.0",
+    "@twurple/auth": "^8.2.0",
+    "@twurple/chat": "^8.2.0",
+    "@twurple/eventsub-base": "^8.2.0",
+    "@twurple/eventsub-ws": "^8.2.0",
     "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "openai": "^6.49.0"
+    "dotenv": "^18.0.10",
+    "express": "^5.3.0",
+    "openai": "^7.60.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@types/node": "^24.13.4",
-    "nodemon": "^3.1.14",
+    "@types/node": "^26.6.6",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.3"
   }
 }

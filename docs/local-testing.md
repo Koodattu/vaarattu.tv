@@ -1,7 +1,7 @@
 # Isolated local verification
 
 The web API and browser tests can run with synthetic data, without Twitch,
-YouTube or OpenAI credentials. Use Node.js 24 (the version used for verification),
+YouTube or OpenAI credentials. Use Node.js 26 (the version used for verification),
 npm, Docker and an available Chromium browser for Playwright.
 
 Run these PowerShell commands from the repository root. On other shells, use
@@ -29,7 +29,7 @@ containing data you want to keep: the existing recording suite clears tables.
 
 ```powershell
 $testContainer = 'vaarattu-local-tests'
-docker run --detach --rm --name $testContainer --publish 127.0.0.1:35489:5432 --memory 384m --cpus 1 --env POSTGRES_HOST_AUTH_METHOD=trust --tmpfs /var/lib/postgresql/data:rw postgres:17.10-alpine3.23
+docker run --detach --rm --name $testContainer --publish 127.0.0.1:35489:5432 --memory 384m --cpus 1 --env POSTGRES_HOST_AUTH_METHOD=trust --tmpfs /var/lib/postgresql/data:rw postgres:17.12-alpine3.24@sha256:a77aa70e641402a21411b92b721c58d10f23b50ae5fdd2333efd22d166e1e5f7
 docker exec $testContainer pg_isready -U postgres
 $env:VOD_TEST_DATABASE_URL = 'postgresql://postgres@127.0.0.1:35489/postgres'
 $env:DATABASE_URL = $env:VOD_TEST_DATABASE_URL

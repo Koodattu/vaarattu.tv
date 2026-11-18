@@ -1,5 +1,5 @@
-import { PrismaClient } from "@vaarattu/shared";
+import { createPrismaClient } from "@vaarattu/shared";
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 export default prisma;

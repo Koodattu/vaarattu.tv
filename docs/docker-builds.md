@@ -24,7 +24,7 @@ Deployment still runs database migrations before either backend starts. Building
 
 - `backend/Dockerfile` builds both services and the migration image. Compose selects the `web`, `twitch`, or `migrate` target and supplies the matching `SERVICE` build argument for each backend.
 - Shared dependencies, Prisma generation, and shared TypeScript compilation use common stages. Editing shared TypeScript does not reinstall dependencies or regenerate Prisma; changing a migration alone only rebuilds the migration image.
-- Each service installs from its lockfile before copying source. Its production dependency stage is independent of source changes. Runtime images contain compiled JavaScript, production dependencies, and the generated Prisma engine. The migration image retains Prisma tooling but does not compile either service.
+- Each service installs from its lockfile before copying source. Its production dependency stage is independent of source changes. Runtime images contain compiled JavaScript, production dependencies, and the generated Prisma client. The migration image retains Prisma tooling but does not compile either service.
 - npm downloads persist in a BuildKit cache mount. The frontend inherits its installed dependencies instead of copying the whole `node_modules` tree into another stage. Next.js compilation cache persists separately for each CPU architecture.
 - Build contexts exclude local dependencies, generated output, logs, and TypeScript caches. Backend contexts also exclude environment files and tokens. The frontend still reads its existing `.env` / `.env.local` build configuration for `NEXT_PUBLIC_API_BASE_URL`; these files must contain only public frontend configuration, never backend secrets. Changing that public URL requires rebuilding the frontend.
 
@@ -45,6 +45,14 @@ docker system df
 Sustained swap activity (`si`/`so` in `vmstat`), high I/O wait (`wa`), or a full Docker filesystem can explain slow layer creation. On a Pi, `vcgencmd get_throttled` can also reveal throttling if the utility is available. Check the storage underlying Docker, especially when using an SD card or a VM disk. These are diagnostic checks; do not delete volumes or prune the build cache as a routine speed fix.
 
 ## Dependency maintenance
+
+### Dependency update, 2026-11-18
+
+Both application images use Node 26.13.1 LTS on Alpine 3.24. All four npm workspaces use TypeScript 6.0.3. The frontend uses Next.js 16.4.6 and React 19.3.1. ESLint 9 and TypeScript 6 match the supported peer ranges of the Next.js lint plugins.
+
+The API and collector use Prisma 7.10.1 with the PostgreSQL adapter. The shared client reads the existing `DATABASE_URL` on connection and passes `connection_limit` to the driver pool. The migration service uses the existing migration history via `prisma.config.ts`. This release requires no database schema or PostgreSQL server upgrade. The disposable integration database follows the production PostgreSQL 17 major.
+
+Production uses the Compose checkout at `raspbi5:/home/koodattu/vaarattu.tv` and serves `https://dev.vaarattu.tv`. Preserve the previous image IDs before the sequential build, then run `docker compose up -d --no-build`. Verify the migration exit code, running package versions and a public read such as `/api/clips?limit=1`. The GitHub workflow is a placeholder.
 
 ### Security update: 2026-10-23
 

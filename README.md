@@ -137,7 +137,7 @@ Designed to run on a Raspberry Pi 5 — no expensive cloud hosting required. Eve
 
 ### Prerequisites
 
-- Node.js 20.9+ for Next.js (local verification uses Node.js 24)
+- Node.js 26 LTS and npm
 - PostgreSQL
 - Twitch Developer App (Client ID & Secret)
 - OpenAI API key (for AI profiles)

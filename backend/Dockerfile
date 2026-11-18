@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM node:24.22.1-alpine3.24@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53 AS base
+FROM node:26.13.1-alpine3.24@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5 AS base
 RUN apk add --no-cache openssl
 WORKDIR /app/shared
 
@@ -8,10 +8,12 @@ COPY shared/package.json shared/package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm PRISMA_SKIP_POSTINSTALL_GENERATE=1 npm ci --no-audit --no-fund
 
 FROM shared-deps AS migrate
+COPY shared/prisma.config.ts ./
 COPY shared/prisma ./prisma
 CMD ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
 
 FROM shared-deps AS shared-build
+COPY shared/prisma.config.ts ./
 COPY shared/prisma/schema.prisma ./prisma/schema.prisma
 RUN npx --no-install prisma generate
 COPY shared/tsconfig.json shared/*.ts ./
